@@ -1,0 +1,25 @@
+{
+  "typescript": {
+    "lineWidth": 150,
+    "quoteStyle": "preferSingle",
+    "semiColons": "asi",
+    "useBraces": "always",
+    "singleBodyPosition": "sameLine",
+    "bracePosition": "sameLine",
+    "importDeclaration.preferHanging": true,
+    "exportDeclaration.preferHanging": true,
+    "arrowFunction.useParentheses": "force"
+  },
+  "includes": [
+    "src/**"
+  ],
+  "excludes": [
+    "**/node_modules",
+    "**/*-lock.json",
+    "**/dist",
+    "**/*.js"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.88.6.wasm",
+  ]
+}

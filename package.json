@@ -1,0 +1,60 @@
+{
+  "name": "data-schema-analyzer",
+  "version": "0.1.0",
+  "description": "Data Schema Analyzer",
+  "author": "",
+  "license": "MIT",
+  "repository": "",
+  "keywords": [],
+  "engines": {
+    "node": ">= 16.0.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "clean": "rimraf dist coverage",
+    "lint": "eslint \"src/**/*.ts\"",
+    "format": "dprint fmt && git status",
+    "build": "tsc",
+    "prepare": "npm run lint && npm run clean && npm run build",
+    "test": "jest --maxWorkers=4",
+    "coverage": "jest --maxWorkers=4 --coverage"
+  },
+  "dependencies": {
+    "ts-morph": "^21.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "~16.18.80",
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1",
+    "dprint": "^0.45.0",
+    "eslint": "~8.56.0",
+    "eslint-plugin-jest": "^27.8.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "preset": "ts-jest",
+    "roots": [
+      "src"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts"
+    ],
+    "coverageReporters": [
+      "lcov",
+      "json-summary"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ]
+  }
+}
