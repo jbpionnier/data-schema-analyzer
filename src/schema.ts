@@ -20,7 +20,6 @@ export type ArrayType = {
 export type ValueType = PrimitiveType | EnumType | ObjectType | ArrayType
 
 export type Schema = {
-  name: string
   required?: true
   id?: true
   minLength?: number

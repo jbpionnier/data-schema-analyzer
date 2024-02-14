@@ -2,6 +2,12 @@ import { ArrayTypeNode, Identifier, InterfaceDeclaration, JSDocableNode, Node, P
   TypeAliasDeclaration, TypeLiteralNode, TypeNode, TypeReferenceNode, UnionTypeNode } from 'ts-morph'
 import { ArrayType, EnumType, ObjectProperties, ObjectType, PrimitiveType, Schema, ValueType } from './schema'
 
+export type GenerateOptions = {
+  fileNameOrPath: string
+  rootInterfaceName: string
+  imports?: string[]
+}
+
 export class SourceFiles {
   constructor(
     private readonly sourceFiles: SourceFile[],
@@ -23,18 +29,14 @@ export class SchemaGenerator {
     this.project = new Project({ tsConfigFilePath: opts.tsConfigFilePath })
   }
 
-  generate(opts: {
-    fileNameOrPath: string
-    imports?: string[]
-    typeName: string
-  }): Schema & ObjectType {
+  generate(opts: GenerateOptions): Schema & ObjectType {
     const sourceFiles = new SourceFiles(this.project.getSourceFiles([
       opts.fileNameOrPath,
       ...opts.imports || [],
     ]))
-    const typeAlias = sourceFiles.getTypeAlias(opts.typeName)
+    const typeAlias = sourceFiles.getTypeAlias(opts.rootInterfaceName)
     if (!typeAlias) {
-      throw new Error(`Type "${opts.typeName}" not found in "${opts.fileNameOrPath}"`)
+      throw new Error(`Type "${opts.rootInterfaceName}" not found in "${opts.fileNameOrPath}"`)
     }
     return this.getValueType(typeAlias.getTypeNode() as TypeNode, sourceFiles, '') as Schema & ObjectType // TODO
   }
@@ -169,7 +171,6 @@ export class SchemaGenerator {
     const valueTypeValid: ValueType = hasUndefinedKeyword && 'values' in valueType && valueType.values[0] ? valueType.values[0] as any : valueType
 
     return {
-      name,
       ...tags,
       ...isRequired ? { required: true } : null,
       ...typeof valueTypeValid === 'string'

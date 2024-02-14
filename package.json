@@ -20,9 +20,11 @@
     "lint": "eslint \"src/**/*.ts\"",
     "format": "dprint fmt && git status",
     "build": "tsc",
-    "prepare": "npm run lint && npm run clean && npm run build",
+    "example": "npx ts-node examples/generate-schema.ts",
+    "pretest": "npm run example",
     "test": "jest --maxWorkers=4",
-    "coverage": "jest --maxWorkers=4 --coverage"
+    "coverage": "jest --maxWorkers=4 --coverage",
+    "prepare": "npm run lint && npm run clean && npm run build"
   },
   "dependencies": {
     "ts-morph": "^21.0.1"

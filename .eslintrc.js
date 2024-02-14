@@ -106,6 +106,11 @@ module.exports = {
       files: [
         '*.spec.ts',
       ],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        project: 'tsconfig.spec.json',
+        sourceType: 'module',
+      },
       rules: {
         'jest/no-test-callback': 'off',
         'jest/no-commented-out-tests': 'off',

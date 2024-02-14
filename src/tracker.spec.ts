@@ -1,4 +1,4 @@
-import { ObjectType, Schema } from './schema'
+import { Schema } from './schema'
 import { SchemaGenerator } from './schema-generator'
 import { Tracker } from './tracker'
 
@@ -23,67 +23,76 @@ type SimpleType = {
 }
 
 describe('Tracker', () => {
-  let schema: Schema & ObjectType
-
-  beforeAll(() => {
-    const generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.json' })
-    schema = generator.generate({
-      fileNameOrPath: 'src/tracker.spec.ts',
-      typeName: 'SimpleType',
-    })
-  })
-
   describe('analyzeProperties', () => {
-    it('should analyze properties', () => {
-      expect(schema.properties).toEqual({
-        name: { name: 'name', type: 'string', required: true, minLength: 1, maxLength: 5 },
-        age: { name: 'age', type: 'number', minimum: 1, maximum: 99 },
-        firstName: { name: 'firstName', type: 'string', pattern: '^\\w+$' },
-        info: {
-          name: 'info',
-          type: 'object',
-          required: true,
-          properties: {
-            gender: {
-              name: 'gender',
-              type: 'enum',
-              required: true,
-              values: ['MAN', 'WOMAN'],
-            },
-          },
-        },
+    it('should return required/unknown warning for property', () => {
+      const tracker = createTracker<{ name: string }>({
+        name: { type: 'string', required: true },
       })
 
-      const input: any = {
-        newProp: 'hello',
-        firstName: 'Jean Kevin',
-        age: '35',
-        info: {
-          gender: 'OTHER',
-        },
-      }
-
-      const tracker = new Tracker<SimpleType>({ schema, summaryResult: true })
-      const badProperties = tracker.analyzeProperties(input)
-      expect(badProperties).toEqual([
-        { property: 'name', type: 'REQUIRED', example: '[string]' },
-        { property: 'firstName', type: 'PATTERN', example: '"Jean Kevin" not match /^\\w+$/' },
-        { property: 'age', type: 'TYPE', example: '"35"' },
-        { property: 'info.gender', type: 'ENUM_UNKNOWN', example: 'OTHER' },
-        { property: 'newProp', type: 'UNKNOWN', example: 'hello' },
+      expect(tracker.analyzeProperties({ other: true } as any)).toEqual([
+        { property: 'name', type: 'REQUIRED', description: 'required property is missing', example: '[string]' },
+        { property: 'other', type: 'UNKNOWN', description: 'unknown property', example: true },
       ])
-      // | 'MIN_ITEMS'
-      // | 'MAX_ITEMS'
-      const badProperties2 = tracker.analyzeProperties({ ...input, name: '', age: -1 })
-      expect(badProperties2).toEqual([
-        { property: 'name', type: 'MIN_LENGTH', example: ' (0 < 1)' },
-        { property: 'age', type: 'MINIMUM', example: '-1 < 1' },
-      ])
+    })
 
-      const badProperties3 = tracker.analyzeProperties({ ...input, name: 'Jean Kevin', age: 200 })
-      expect(badProperties3).toEqual([
-        { property: 'name', type: 'MAX_LENGTH', example: 'Jean Kevin (10 > 5)' },
-        { property: 'age', type: 'MAXIMUM', example: '200 > 99' },
+    it('should return min/max length and pattern warning for string property', () => {
+      const tracker = createTracker<{ name: string }>({
+        name: { type: 'string', minLength: 4, maxLength: 8, pattern: '^\\w+$' },
+      })
+
+      expect(tracker.analyzeProperties({ name: 'foo' })).toEqual([
+        { property: 'name', type: 'MIN_LENGTH', description: 'property length is too short (4 minimum)', example: '"foo" (3)' },
+      ])
+      expect(tracker.analyzeProperties({ name: 'Jean Kevin' })).toEqual([
+        { property: 'name', type: 'MAX_LENGTH', description: 'property length is too long (8 maximum)', example: '"Jean Kevin" (10)' },
+      ])
+      expect(tracker.analyzeProperties({ name: 'foo bar' })).toEqual([
+        { property: 'name', type: 'PATTERN', description: 'property value not match pattern /^\\w+$/', example: 'foo bar' },
+      ])
+      expect(tracker.analyzeProperties({ name: 35 } as any)).toEqual([
+        { property: 'name', type: 'TYPE', description: 'property type is not string', example: '35' },
+      ])
+    })
+
+    it('should return min/max warning for number property', () => {
+      const tracker = createTracker<{ age: number }>({
+        age: { type: 'number', minimum: 0, maximum: 99 },
+      })
+
+      expect(tracker.analyzeProperties({ age: -1 })).toEqual([
+        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: -1 },
+      ])
+      expect(tracker.analyzeProperties({ age: 200 })).toEqual([
+        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 200 },
+      ])
+      expect(tracker.analyzeProperties({ age: '35' } as any)).toEqual([
+        { property: 'age', type: 'TYPE', description: 'property type is not number', example: '"35"' },
+      ])
+    })
+
+    it('should return unknown value warning for enum property', () => {
+      const tracker = createTracker<{ gender: 'MAN' | 'WOMAN' }>({
+        gender: { type: 'enum', values: ['MAN', 'WOMAN'] },
+      })
+
+      expect(tracker.analyzeProperties({ gender: 'OTHER' } as any)).toEqual([
+        { property: 'gender', type: 'ENUM_UNKNOWN', description: 'property value not in enum values [MAN, WOMAN]', example: 'OTHER' },
+      ])
+    })
+
+    it('should return min/max length warning for array property', () => {
+      const tracker = createTracker<{ list: string[] }>({
+        list: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 2 },
+      })
+
+      expect(tracker.analyzeProperties({ list: [] })).toEqual([
+        { property: 'list', type: 'MIN_ITEMS', description: 'array length is too short (1 minimum)', example: 0 },
+      ])
+      expect(tracker.analyzeProperties({ list: ['foo', 'bar', 'baz'] })).toEqual([
+        { property: 'list', type: 'MAX_ITEMS', description: 'array length is too long (2 maximum)', example: 3 },
+      ])
+      expect(tracker.analyzeProperties({ list: [1] } as any)).toEqual([
+        { property: 'list', type: 'TYPE', description: 'property type is not string', example: '1' },
       ])
     })
   })
@@ -92,6 +101,11 @@ describe('Tracker', () => {
     let tracker: Tracker<SimpleType>
 
     beforeAll(() => {
+      const generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
+      const schema = generator.generate({
+        fileNameOrPath: 'src/tracker.spec.ts',
+        rootInterfaceName: 'SimpleType',
+      })
       tracker = new Tracker<SimpleType>({ schema })
     })
 
@@ -191,3 +205,9 @@ describe('Tracker', () => {
     })
   })
 })
+
+function createTracker<T extends { [key: string]: any }>(properties: { [property: string]: Schema }): Tracker<T> {
+  return new Tracker<T>({
+    schema: { properties },
+  } as any)
+}

@@ -19,15 +19,15 @@ type PropertyResult = {
     | 'MIN_ITEMS'
     | 'MAX_ITEMS'
     | 'PATTERN'
-  description?: string
-  example?: string | number | undefined | null
+  description: string
+  example?: string | number
 }
 
 export class Tracker<T extends { [key: string]: any }> {
   private readonly logger: (message: string) => void
 
   private readonly summaryResult: Set<string> | undefined
-  private readonly identifierProperty?: Schema
+  private readonly identifierProperty?: Schema & { name: string }
   private ids: { [identifier: string]: boolean | undefined } = {}
 
   private propertiesOptionalList: Set<string> | undefined
@@ -49,7 +49,10 @@ export class Tracker<T extends { [key: string]: any }> {
     this.schema = schema
     this.logger = logger || console.log
     this.summaryResult = summaryResult ? new Set<string>() : undefined
-    this.identifierProperty = Object.values(this.schema.properties).find(({ id }) => id === true)
+
+    const identifierPropertyEntry = Object.entries(this.schema.properties)
+      .find(([_propertyName, property]) => property.id === true)
+    this.identifierProperty = identifierPropertyEntry ? { name: identifierPropertyEntry[0], ...identifierPropertyEntry[1] } : undefined
   }
 
   initialize({ inspectData }: { inspectData?: boolean } = {}): void {
@@ -149,7 +152,7 @@ export class Tracker<T extends { [key: string]: any }> {
           .localeCompare(`${propertyB.split('.').length}${propertyB}`, 'en', { sensitivity: 'base' })
       })
       .slice(0, 20)
-      .map((res) => `[${res.type}] ${inputId || ''} ${res.property} ${res.description}${res.example ? `: ${res.example}` : ''}`)
+      .map((res) => `[${res.type}] ${inputId || ''} ${res.property} ${res.description || ''}${res.example ? `: ${res.example}` : ''}`)
       .forEach((message) => this.logger(message))
   }
 
@@ -193,6 +196,7 @@ export class Tracker<T extends { [key: string]: any }> {
       return [{
         property: namespace,
         type: 'UNKNOWN',
+        description: 'unknown property',
         example: input,
       }]
     }
@@ -201,6 +205,7 @@ export class Tracker<T extends { [key: string]: any }> {
       return [{
         property: namespace,
         type: 'REQUIRED',
+        description: 'required property is missing',
         example: 'items' in schema && 'values' in schema.items ? `Array<${schema.items?.values?.join(' | ')}>` : `[${schema.type}]`,
       }]
     }
@@ -255,7 +260,6 @@ export class Tracker<T extends { [key: string]: any }> {
       const itemsResult = input
         .flatMap((value: any) => {
           return this.processProperties({
-            // @ts-expect-error
             schema: { ...schema.items, required: schema.required },
             input: value,
             namespace,
@@ -269,10 +273,9 @@ export class Tracker<T extends { [key: string]: any }> {
       const itemsResult = input
         .map((value: any) => {
           return this.checkProperty({
-            // @ts-expect-error
             schema: schema.items,
             namespace,
-            recorded: value,
+            input: value,
           })
         })
       return [inputResult, ...itemsResult]
@@ -286,7 +289,7 @@ export class Tracker<T extends { [key: string]: any }> {
     schema: Schema
     input: any
   }): PropertyResult {
-    const resultOk: PropertyResult = { property: namespace, type: 'OK' }
+    const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }
     if (input == null) {
       return resultOk
     }
@@ -299,6 +302,7 @@ export class Tracker<T extends { [key: string]: any }> {
           return {
             property: namespace,
             type: 'TYPE',
+            description: `property type is not ${schema.type}`,
             example: JSON.stringify(input),
           }
         }
@@ -307,28 +311,32 @@ export class Tracker<T extends { [key: string]: any }> {
           return {
             property: namespace,
             type: 'MIN_LENGTH',
-            example: `${input} (${valueLength} < ${schema.minLength})`,
+            description: `property length is too short (${schema.minLength} minimum)`,
+            example: `"${input}" (${valueLength})`,
           }
         }
         if (schema.maxLength != null && valueLength > schema.maxLength) {
           return {
             property: namespace,
             type: 'MAX_LENGTH',
-            example: `${input} (${valueLength} > ${schema.maxLength})`,
+            description: `property length is too long (${schema.maxLength} maximum)`,
+            example: `"${input}" (${valueLength})`,
           }
         }
         if (schema.minimum != null && schema.type === 'number' && input < schema.minimum) {
           return {
             property: namespace,
             type: 'MINIMUM',
-            example: `${input} < ${schema.minimum}`,
+            description: `property value is too low (${schema.minimum} minimum)`,
+            example: input,
           }
         }
         if (schema.maximum != null && schema.type === 'number' && input > schema.maximum) {
           return {
             property: namespace,
             type: 'MAXIMUM',
-            example: `${input} > ${schema.maximum}`,
+            description: `property value is too high (${schema.maximum} maximum)`,
+            example: input,
           }
         }
         if (schema.pattern && typeof schema.pattern === 'string') {
@@ -338,7 +346,8 @@ export class Tracker<T extends { [key: string]: any }> {
           return {
             property: namespace,
             type: 'PATTERN',
-            example: `"${input}" not match ${schema.pattern}`,
+            description: `property value not match pattern ${schema.pattern}`,
+            example: input,
           }
         }
         return resultOk
@@ -360,6 +369,7 @@ export class Tracker<T extends { [key: string]: any }> {
           return {
             property: namespace,
             type: 'ENUM_UNKNOWN',
+            description: `property value not in enum values [${schema.values.join(', ')}]`,
             example: input,
           }
         }
@@ -369,7 +379,7 @@ export class Tracker<T extends { [key: string]: any }> {
         // if (!('properties' in schema)) {
         //   return resultOk
         // }
-        return resultOk // TODO
+        return resultOk
       }
       case 'array': {
         const valueLength = (input as any[]).length
@@ -380,20 +390,22 @@ export class Tracker<T extends { [key: string]: any }> {
           return {
             property: namespace,
             type: 'MIN_ITEMS',
-            example: `${valueLength} < ${schema.minItems}`,
+            description: `array length is too short (${schema.minItems} minimum)`,
+            example: valueLength,
           }
         }
         if (schema.maxItems != null && valueLength > schema.maxItems) {
           return {
             property: namespace,
             type: 'MAX_ITEMS',
-            example: `${valueLength} > ${schema.maxItems}`,
+            description: `array length is too long (${schema.maxItems} maximum)`,
+            example: valueLength,
           }
         }
-        return resultOk // TODO
+        return resultOk
       }
       default: {
-        console.warn(`[Tracker] checkProperty ${namespace} unknown type ${schema.type}:`, schema)
+        this.logger(`[Tracker] checkProperty ${namespace} unknown type ${schema.type}`)
         return resultOk
       }
     }
