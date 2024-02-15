@@ -1,40 +1,11 @@
 import { ObjectType, Schema } from './schema'
-
-export type PropertyResult = {
-  property: string
-  type:
-    | 'OK'
-    | 'UNKNOWN'
-    | 'TYPE'
-    | 'NEVER_USED'
-    | 'ALWAYS_PRESENT'
-    | 'SINGLE_VALUE'
-    | 'ENUM_VALUES'
-    | 'ENUM_UNKNOWN'
-    | 'REQUIRED'
-    | 'MINIMUM'
-    | 'MAXIMUM'
-    | 'MIN_LENGTH'
-    | 'MAX_LENGTH'
-    | 'MIN_ITEMS'
-    | 'MAX_ITEMS'
-    | 'PATTERN'
-  description: string
-  example?: string | number
-}
-
-export type TrackReport = {
-  success: boolean
-  inputId?: string | number
-  properties: PropertyResult[]
-}
+import { PrintReporter, PropertyResult, TrackerOptions, TrackReport } from './types'
 
 export class Tracker<T extends { [key: string]: any }> {
-  private readonly logger: (message: string) => void
-
   private readonly summaryResult: Set<string> | undefined
   private readonly identifierProperty?: Schema & { name: string }
-  private ids: { [identifier: string]: boolean | undefined } = {}
+
+  private trackedIds = new Set<string>()
 
   private propertiesOptionalList: Set<string> | undefined
   private propertiesOptionalWithoutValue: Set<string> | undefined
@@ -46,23 +17,25 @@ export class Tracker<T extends { [key: string]: any }> {
   private enumValuesUsed: Record<string, Record<string, true>> | undefined
 
   readonly schema: ObjectType
+  readonly printReporter: PrintReporter
 
-  constructor({ schema, logger, summaryResult }: {
-    schema: ObjectType
-    logger?: (message: string) => void
-    summaryResult?: boolean
-  }) {
+  constructor({ schema, printReporter, logger, summaryResult }: TrackerOptions) {
     this.schema = schema
-    this.logger = logger || console.log
+    this.printReporter = printReporter || createSimplePrintReporter(logger)
     this.summaryResult = summaryResult ? new Set<string>() : undefined
 
     const identifierPropertyEntry = Object.entries(this.schema.properties)
       .find(([_propertyName, property]) => property.id === true)
-    this.identifierProperty = identifierPropertyEntry ? { name: identifierPropertyEntry[0], ...identifierPropertyEntry[1] } : undefined
+    if (identifierPropertyEntry) {
+      if (!identifierPropertyEntry[1].required) {
+        throw new Error('Identifier property must be required')
+      }
+      this.identifierProperty = { name: identifierPropertyEntry[0], ...identifierPropertyEntry[1] }
+    }
   }
 
   analyzeStart({ inspectData }: { inspectData?: boolean } = {}): void {
-    this.ids = {}
+    this.trackedIds = new Set<string>()
     this.propertiesOptionalList = undefined
     this.propertiesOptionalWithoutValue = undefined
     this.propertiesOptionalWithValue = undefined
@@ -90,7 +63,7 @@ export class Tracker<T extends { [key: string]: any }> {
 
   analyzeEndAndPrint(): void {
     const report = this.analyzeEnd()
-    this.printResultProperties(report)
+    this.printReporter(report)
   }
 
   analyzeEnd(): TrackReport {
@@ -163,7 +136,7 @@ export class Tracker<T extends { [key: string]: any }> {
       })
       .slice(0, 20)
 
-    this.printResultProperties({
+    this.printReporter({
       ...report,
       properties: summaryProperties,
     })
@@ -171,15 +144,15 @@ export class Tracker<T extends { [key: string]: any }> {
 
   track(input: T): TrackReport {
     const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
-    if (inputId != null && !this.identifierProperty?.multiple) {
-      this.checkIfAlreadyTracked(inputId)
-    }
+    const alreadyTracked = this.handleTrackedId(inputId)
 
-    const processedProperties = this.processProperties({
-      input,
-      schema: this.schema,
-      namespace: '',
-    })
+    const processedProperties = alreadyTracked.length
+      ? alreadyTracked
+      : this.processProperties({
+        input,
+        schema: this.schema,
+        namespace: '',
+      })
 
     const summaryProperties = processedProperties
       .filter((item) => {
@@ -194,29 +167,24 @@ export class Tracker<T extends { [key: string]: any }> {
         return true
       })
 
-    return { success: summaryProperties.length === 0, inputId, properties: summaryProperties }
+    const success = summaryProperties.length === 0
+
+    return { success, inputId, properties: summaryProperties }
   }
 
-  private checkIfAlreadyTracked(inputId: string): void {
-    if (this.ids[inputId]) {
-      this.logger(`[Tracker] ${inputId} already tracked`)
-      this.ids[inputId] = false
-      return
+  private handleTrackedId(inputId: string | undefined): PropertyResult[] {
+    if (inputId == null || !this.identifierProperty || this.identifierProperty?.multiple) {
+      return []
     }
-    if (this.ids[inputId] === false) {
-      return
+    if (this.trackedIds.has(inputId)) {
+      return [{
+        property: this.identifierProperty.name,
+        type: 'ALREADY_TRACKED',
+        description: 'input already tracked',
+      }]
     }
-    this.ids[inputId] = true
-  }
-
-  private printResultProperties(report: TrackReport): void {
-    const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
-    report.properties
-      .map((res) => {
-        const exampleString = res.example ? `: ${res.example}` : ''
-        return `[${res.type}]${inputIdString} ${res.property} ${res.description}${exampleString}`
-      })
-      .forEach((message) => this.logger(message))
+    this.trackedIds.add(inputId)
+    return []
   }
 
   private processProperties({ input, schema, namespace }: {
@@ -437,9 +405,25 @@ export class Tracker<T extends { [key: string]: any }> {
         return resultOk
       }
       default: {
-        this.logger(`[Tracker] checkProperty ${namespace} unknown type ${schema.type}`)
-        return resultOk
+        return {
+          property: namespace,
+          type: 'UNKNOWN_TYPE',
+          description: `unknown type ${schema.type}`,
+          example: input,
+        }
       }
     }
+  }
+}
+
+function createSimplePrintReporter(logger: (message: string) => void = console.log): PrintReporter {
+  return (report: TrackReport): void => {
+    const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
+    report.properties
+      .map((res) => {
+        const exampleString = res.example ? `: ${res.example}` : ''
+        return `[${res.type}]${inputIdString} ${res.property} ${res.description}${exampleString}`
+      })
+      .forEach((message) => logger(message))
   }
 }

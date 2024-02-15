@@ -1,6 +1,6 @@
 import { SchemaGenerator, Tracker } from './'
 import { Schema } from './schema'
-import { PropertyResult, TrackReport } from './tracker'
+import { PropertyResult, TrackReport } from './types'
 
 type SimpleType = {
   /**
@@ -33,6 +33,30 @@ describe('Tracker', () => {
         { property: 'name', type: 'REQUIRED', description: 'required property is missing', example: '[string]' },
         { property: 'other', type: 'UNKNOWN', description: 'unknown property', example: true },
       ])
+    })
+
+    it('should return no warning without id property', () => {
+      const track = createTracker<{ id: number }>({
+        id: { type: 'number', required: true },
+      })
+
+      expect(track({ id: 1 })).toEqual([])
+      expect(track({ id: 1 })).toEqual([])
+    })
+
+    it('should return already tracked warning with id property', () => {
+      const track = createTracker<{ id: number }>({
+        id: { type: 'number', id: true, required: true },
+      }, { summaryResult: true })
+
+      expect(track({ id: 1 })).toEqual([])
+      expect(track({ id: 2 })).toEqual([])
+
+      expect(track({ id: 1 })).toEqual([
+        { property: 'id', type: 'ALREADY_TRACKED', description: 'input already tracked' },
+      ])
+
+      expect(track({ id: 1 })).toEqual([])
     })
 
     it('should return min/max length and pattern warning for string property', () => {
@@ -114,15 +138,15 @@ describe('Tracker', () => {
       tracker.analyzeStart({ inspectData: true })
     })
 
-    it('should return always present', () => {
-      expect(tracker
-        .track({
+    it('should return always present', async () => {
+      const report = await tracker
+        .trackAsync({
           name: 'Kevin',
           age: 35,
           firstName: 'Jean',
           info: { gender: 'MAN' },
-        }))
-        .toEqual(successReport)
+        })
+      expect(report).toEqual(successReport)
 
       expect(tracker
         .track({
@@ -132,7 +156,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = tracker.analyzeEnd()
+      const result = await tracker.analyzeEndAsync()
       expect(result)
         .toEqual({
           success: false,
@@ -239,9 +263,13 @@ describe('Tracker', () => {
   })
 })
 
-function createTracker<T extends { [key: string]: any }>(properties: { [property: string]: Schema }): (input: T) => PropertyResult[] {
+function createTracker<T extends { [key: string]: any }>(
+  properties: { [property: string]: Schema },
+  options: { summaryResult?: true } = {},
+): (input: T) => PropertyResult[] {
   const tracker = new Tracker<T>({
     schema: { properties },
+    ...options,
   } as any)
 
   return (input: T) => {

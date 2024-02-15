@@ -26,7 +26,7 @@ tracker.track({ id: 1, name: 'John Doe', age: 'Not a number' })
 tracker.track({ id: 2, name: 'Kevin', age: -5 })
 // ...
 
-tracker.analyzeStats()
+tracker.analyzeEnd()
 
 // Prints
 // [TYPE] age property type is not number: "Not a number"
