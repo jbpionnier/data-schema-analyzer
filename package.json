@@ -23,7 +23,7 @@
     "clean": "rimraf dist coverage",
     "build": "tsc",
     "test": "jest --maxWorkers=4",
-    "test:watch": "npm run test --watch",
+    "test:watch": "jest --maxWorkers=4 --watch",
     "coverage": "jest --maxWorkers=4 --coverage",
     "prepublishOnly": "npm run test && npm run build",
     "play": "npx ts-node examples/generate-schema.ts"

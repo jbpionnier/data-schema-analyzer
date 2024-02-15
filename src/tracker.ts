@@ -1,6 +1,6 @@
 import { ObjectType, Schema } from './schema'
 
-type PropertyResult = {
+export type PropertyResult = {
   property: string
   type:
     | 'OK'
@@ -21,6 +21,12 @@ type PropertyResult = {
     | 'PATTERN'
   description: string
   example?: string | number
+}
+
+export type TrackReport = {
+  success: boolean
+  inputId?: string | number
+  properties: PropertyResult[]
 }
 
 export class Tracker<T extends { [key: string]: any }> {
@@ -55,7 +61,7 @@ export class Tracker<T extends { [key: string]: any }> {
     this.identifierProperty = identifierPropertyEntry ? { name: identifierPropertyEntry[0], ...identifierPropertyEntry[1] } : undefined
   }
 
-  initialize({ inspectData }: { inspectData?: boolean } = {}): void {
+  analyzeStart({ inspectData }: { inspectData?: boolean } = {}): void {
     this.ids = {}
     this.propertiesOptionalList = undefined
     this.propertiesOptionalWithoutValue = undefined
@@ -77,14 +83,19 @@ export class Tracker<T extends { [key: string]: any }> {
     }
   }
 
-  analyzeStats(): void {
-    const results = this.summarizeProperties()
-    this.printResultProperties(results)
+  analyzeEndAsync(): Promise<TrackReport> {
+    const result = this.analyzeEnd()
+    return Promise.resolve(result)
   }
 
-  summarizeProperties(): PropertyResult[] {
+  analyzeEndAndPrint(): void {
+    const report = this.analyzeEnd()
+    this.printResultProperties(report)
+  }
+
+  analyzeEnd(): TrackReport {
     if (!this.propertiesOptionalList) {
-      return []
+      return { success: true, properties: [] }
     }
 
     const propertiesOptional = [...this.propertiesOptionalList]
@@ -128,45 +139,49 @@ export class Tracker<T extends { [key: string]: any }> {
           : []
       })
 
-    return [
+    const properties = [
       ...propertiesAlwaysPresent,
       ...propertiesNeverUsed,
       ...propertiesSingleValue,
       ...propertiesEnumValuesUsed,
     ]
+    return { success: properties.length === 0, properties }
   }
 
-  trackAsync(input: T): Promise<PropertyResult[]> {
+  trackAsync(input: T): Promise<TrackReport> {
     const result = this.track(input)
     return Promise.resolve(result)
   }
 
-  track(input: T): PropertyResult[] {
-    const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
-    if (inputId != null && !this.identifierProperty?.multiple) {
-      this.checkIfAlreadyTracked(inputId)
-    }
+  trackAndPrint(input: T): void {
+    const report = this.track(input)
 
-    const badProperties = this.analyzeProperties(input)
-    const badPropertiesSorted = badProperties
+    const summaryProperties = report.properties
       .sort(({ property: propertyA }, { property: propertyB }) => {
         return `${propertyA.split('.').length}${propertyA}`
           .localeCompare(`${propertyB.split('.').length}${propertyB}`, 'en', { sensitivity: 'base' })
       })
       .slice(0, 20)
 
-    this.printResultProperties(badPropertiesSorted, inputId)
-    return badProperties
+    this.printResultProperties({
+      ...report,
+      properties: summaryProperties,
+    })
   }
 
-  analyzeProperties(input: T): PropertyResult[] {
+  track(input: T): TrackReport {
+    const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
+    if (inputId != null && !this.identifierProperty?.multiple) {
+      this.checkIfAlreadyTracked(inputId)
+    }
+
     const processedProperties = this.processProperties({
       input,
       schema: this.schema,
       namespace: '',
     })
 
-    return processedProperties
+    const summaryProperties = processedProperties
       .filter((item) => {
         if (!this.summaryResult) {
           return true
@@ -178,6 +193,8 @@ export class Tracker<T extends { [key: string]: any }> {
         this.summaryResult.add(resultKey)
         return true
       })
+
+    return { success: summaryProperties.length === 0, inputId, properties: summaryProperties }
   }
 
   private checkIfAlreadyTracked(inputId: string): void {
@@ -192,9 +209,9 @@ export class Tracker<T extends { [key: string]: any }> {
     this.ids[inputId] = true
   }
 
-  private printResultProperties(items: PropertyResult[], inputId?: string | number): void {
-    const inputIdString = inputId != null ? ` ${inputId}` : ''
-    items
+  private printResultProperties(report: TrackReport): void {
+    const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
+    report.properties
       .map((res) => {
         const exampleString = res.example ? `: ${res.example}` : ''
         return `[${res.type}]${inputIdString} ${res.property} ${res.description}${exampleString}`
