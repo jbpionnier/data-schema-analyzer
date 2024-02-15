@@ -10,7 +10,10 @@ export type StubType = {
   myBoolean?: boolean
   myObject?: object
   myAny?: object
-  // myNull: null
+  myNull: null
+  /**
+   * @ignoreUnusedValues
+   */
   myEnumString: 'ping' | 'pong'
   myEnumNumber: 1 | 2 | 3
   mySubType: {
@@ -27,6 +30,11 @@ export type StubType = {
    * @maxItems 5
    */
   myListNumber: number[]
+  myTupleNumber: [number]
+  myTupleEmpty: []
+  /**
+   * @ignoreUnusedProperty
+   */
   myListObject?: object[]
   myListEnumString: Array<'ping' | 'pong'>
   myListEnumNumber?: Array<1 | 2 | 3>

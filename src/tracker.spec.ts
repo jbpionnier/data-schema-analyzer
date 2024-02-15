@@ -1,5 +1,5 @@
 import { SchemaGenerator, Tracker } from './'
-import { Schema } from './schema'
+import { getIdentifierPropertyName, ObjectType, Schema } from './schema'
 import { PropertyResult, TrackReport } from './types'
 
 type SimpleType = {
@@ -20,11 +20,14 @@ type SimpleType = {
   info: {
     gender: 'MAN' | 'WOMAN'
   }
+  list: Array<{
+    tag: string
+  }>
 }
 
 describe('Tracker', () => {
   describe('track', () => {
-    it('should return required/unknown warning for property', () => {
+    it('should return required and unknown warning for property', () => {
       const track = createTracker<{ name: string }>({
         name: { type: 'string', required: true },
       })
@@ -32,6 +35,21 @@ describe('Tracker', () => {
       expect(track({ other: true } as any)).toEqual([
         { property: 'name', type: 'REQUIRED', description: 'required property is missing', example: '[string]' },
         { property: 'other', type: 'UNKNOWN', description: 'unknown property', example: true },
+      ])
+    })
+
+    it('should return required and unknown warning for nested property', () => {
+      const track = createTracker<{ list: { tag: string }[] }>({
+        list: {
+          required: true,
+          type: 'array',
+          items: { type: 'object', properties: { tag: { type: 'string', required: true } } },
+        },
+      })
+
+      expect(track({ list: [{ tags: 'foo' }] } as any)).toEqual([
+        { property: 'list.tag', type: 'REQUIRED', description: 'required property is missing', example: '[string]' },
+        { property: 'list.tags', type: 'UNKNOWN', description: 'unknown property', example: 'foo' },
       ])
     })
 
@@ -71,7 +89,7 @@ describe('Tracker', () => {
         { property: 'name', type: 'MAX_LENGTH', description: 'property length is too long (8 maximum)', example: '"Jean Kevin" (10)' },
       ])
       expect(track({ name: 'foo bar' })).toEqual([
-        { property: 'name', type: 'PATTERN', description: 'property value not match pattern /^\\w+$/', example: 'foo bar' },
+        { property: 'name', type: 'PATTERN', description: 'property value not match pattern ^\\w+$', example: 'foo bar' },
       ])
       expect(track({ name: 35 } as any)).toEqual([
         { property: 'name', type: 'TYPE', description: 'property type is not string', example: '35' },
@@ -119,6 +137,20 @@ describe('Tracker', () => {
         { property: 'list', type: 'TYPE', description: 'property type is not string', example: '1' },
       ])
     })
+
+    it('should return not required warning for nested object in array property', () => {
+      const nestedSchema: ObjectType = { type: 'object', properties: { id: { type: 'number', required: true } } }
+      const track = createTracker<{ list: Array<{ id: number }> }>({
+        list: { type: 'array', items: nestedSchema },
+      })
+
+      expect(track({ list: [] })).toEqual([])
+      expect(track({ list: [{ id: 123 }] })).toEqual([])
+      expect(track({ list: [{ foo: 'bar' } as any] })).toEqual([
+        { property: 'list.id', type: 'REQUIRED', description: 'required property is missing', example: '[number]' },
+        { property: 'list.foo', type: 'UNKNOWN', description: 'unknown property', example: 'bar' },
+      ])
+    })
   })
 
   describe('analyze', () => {
@@ -128,7 +160,7 @@ describe('Tracker', () => {
     beforeAll(() => {
       const generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
       const schema = generator.generate({
-        fileNameOrPath: 'src/tracker.spec.ts',
+        sourceFiles: ['src/tracker.spec.ts'],
         rootInterfaceName: 'SimpleType',
       })
       tracker = new Tracker<SimpleType>({ schema })
@@ -145,6 +177,7 @@ describe('Tracker', () => {
           age: 35,
           firstName: 'Jean',
           info: { gender: 'MAN' },
+          list: [],
         })
       expect(report).toEqual(successReport)
 
@@ -153,6 +186,39 @@ describe('Tracker', () => {
           name: 'Jean',
           firstName: 'Kevin',
           info: { gender: 'WOMAN' },
+          list: [],
+        }))
+        .toEqual(successReport)
+
+      const result = await tracker.analyzeEndAsync()
+      expect(result)
+        .toEqual({
+          success: false,
+          properties: [{
+            type: 'ALWAYS_PRESENT',
+            property: 'firstName',
+            description: 'optional property always present',
+          }],
+        })
+    })
+
+    it('should return always present with nested object', async () => {
+      const report = await tracker
+        .trackAsync({
+          name: 'Kevin',
+          age: 35,
+          firstName: 'Jean',
+          info: { gender: 'MAN' },
+          list: [{ tag: 'foo' }],
+        })
+      expect(report).toEqual(successReport)
+
+      expect(tracker
+        .track({
+          name: 'Jean',
+          firstName: 'Kevin',
+          info: { gender: 'WOMAN' },
+          list: [{ tag: 'bar' }],
         }))
         .toEqual(successReport)
 
@@ -174,6 +240,7 @@ describe('Tracker', () => {
           name: 'Jean',
           age: 35,
           info: { gender: 'MAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -181,6 +248,7 @@ describe('Tracker', () => {
         .track({
           name: 'Kevin',
           info: { gender: 'WOMAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -202,6 +270,7 @@ describe('Tracker', () => {
           name: 'Kevin',
           age: 35,
           info: { gender: 'MAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -210,6 +279,7 @@ describe('Tracker', () => {
           name: 'Kevin',
           firstName: 'Jean',
           info: { gender: 'WOMAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -232,6 +302,7 @@ describe('Tracker', () => {
           name: 'Jean',
           age: 35,
           info: { gender: 'MAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -240,6 +311,7 @@ describe('Tracker', () => {
           name: 'Kevin',
           firstName: 'Kevin',
           info: { gender: 'MAN' },
+          list: [],
         }))
         .toEqual(successReport)
 
@@ -268,9 +340,9 @@ function createTracker<T extends { [key: string]: any }>(
   options: { summaryResult?: true } = {},
 ): (input: T) => PropertyResult[] {
   const tracker = new Tracker<T>({
-    schema: { properties },
+    schema: { type: 'object', identifierProperty: getIdentifierPropertyName({ properties } as any), properties } as any,
     ...options,
-  } as any)
+  })
 
   return (input: T) => {
     const report = tracker.track(input)

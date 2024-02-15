@@ -7,7 +7,7 @@ const generator = new SchemaGenerator({
 })
 
 const stubTypeSchema = generator.generate({
-  fileNameOrPath: 'examples/stub-type.ts',
+  sourceFiles: ['examples/stub-type.ts'],
   rootInterfaceName: 'StubType',
 })
 fs.writeFileSync('./examples/stub-type-schema.json', JSON.stringify(stubTypeSchema, null, 2))
@@ -23,7 +23,8 @@ const report = tracker.track({
   mySubTypeByRefList: []
 })
 
-if (report.properties.length != 8) {
-  console.error('Expected 8 properties, got', report.properties.length)
+console.log('Report ok !')
+if (report.properties.length != 10) {
+  console.error('Expected 10 properties, got', report.properties.length)
   process.exit(1)
 }

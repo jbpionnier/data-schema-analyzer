@@ -1,6 +1,9 @@
 # data-schema-analyzer
 [![npm version](https://badge.fury.io/js/data-schema-analyzer.svg)](https://badge.fury.io/js/data-schema-analyzer)
 
+> [!WARNING]
+> Work in progress.
+
 ## :package: Installation
 
 To install the module from npm:
@@ -34,23 +37,21 @@ tracker.analyzeEnd()
 ```
 
 
-### To Generate Schema file
+### To Generate Schema
 
 ```typescript
 // ./scripts/generate-schema.ts
 
 import { SchemaGenerator } from 'data-schema-analyzer'
-import * as fs from 'node:fs'
 
 const generator = new SchemaGenerator({
   tsConfigFilePath: './tsconfig.json',
 })
 
 const stubTypeSchema = generator.generate({
-  fileNameOrPath: './examples/stub-type.ts',
+  sourceFiles: ['./examples/stub-type.ts'],
   rootInterfaceName: 'StubType',
 })
-fs.writeFileSync('./examples/stub-type-schema.json', JSON.stringify(stubTypeSchema, null, 2))
 ```
 
 ```
@@ -58,7 +59,7 @@ fs.writeFileSync('./examples/stub-type-schema.json', JSON.stringify(stubTypeSche
 
  "scripts": {
   ...
-  "generate:schema": "npx ts-node ./scripts/generate-schema.ts"
+  "generate:schema": "npx tsx ./scripts/generate-schema.ts"
  },
 ```
 

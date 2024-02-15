@@ -121,6 +121,13 @@ module.exports = {
         'id-length': 'off',
         'max-nested-callbacks': ['warn', 4],
       },
+    }, {
+      files: [
+        '**/benchmarks/**/*.ts',
+      ],
+      rules: {
+        'id-length': 'off',
+      },
     }
   ],
 }

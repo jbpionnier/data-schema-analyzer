@@ -1,12 +1,14 @@
 {
+  "name": "StubType",
+  "identifierProperty": "myString",
   "type": "object",
   "properties": {
     "myString": {
+      "required": true,
       "id": true,
       "minLength": 1,
       "maxLength": 3,
       "pattern": "^\\w+$",
-      "required": true,
       "type": "string"
     },
     "myNumber": {
@@ -21,8 +23,12 @@
     "myAny": {
       "type": "object"
     },
+    "myNull": {
+      "type": "null"
+    },
     "myEnumString": {
       "required": true,
+      "ignoreUnusedValues": true,
       "type": "enum",
       "values": [
         "ping",
@@ -46,9 +52,9 @@
           "type": "string"
         },
         "age": {
+          "required": true,
           "minimum": 1,
           "maximum": 99,
-          "required": true,
           "type": "number"
         }
       }
@@ -61,15 +67,30 @@
       }
     },
     "myListNumber": {
+      "required": true,
       "minItems": 1,
       "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "myTupleNumber": {
       "required": true,
       "type": "array",
       "items": {
         "type": "number"
       }
     },
+    "myTupleEmpty": {
+      "required": true,
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "myListObject": {
+      "ignoreUnusedProperty": true,
       "type": "array",
       "items": {
         "type": "object"
@@ -104,8 +125,8 @@
         "type": "object",
         "properties": {
           "subProp": {
-            "minLength": 1,
             "required": true,
+            "minLength": 1,
             "type": "string"
           }
         }
@@ -115,8 +136,8 @@
       "type": "object",
       "properties": {
         "age": {
-          "minimum": 1,
           "required": true,
+          "minimum": 1,
           "type": "number"
         },
         "shareability": {
@@ -135,8 +156,8 @@
         "type": "object",
         "properties": {
           "age": {
-            "minimum": 1,
             "required": true,
+            "minimum": 1,
             "type": "number"
           },
           "shareability": {

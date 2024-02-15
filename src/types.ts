@@ -1,9 +1,19 @@
-import { ObjectType } from './schema'
+import { RootSchema } from './schema'
 
 export type TrackerOptions = {
-  schema: ObjectType
+  /**
+   * The schema to track
+   */
+  schema: RootSchema
   printReporter?: PrintReporter
+  /**
+   * A function to log messages
+   * @param message
+   */
   logger?: (message: string) => void
+  /**
+   * If true, the tracker will return only one report by property
+   */
   summaryResult?: boolean
 }
 
@@ -35,7 +45,7 @@ export type PropertyResult = {
     | 'MAX_ITEMS'
     | 'PATTERN'
   description: string
-  example?: string | number
+  example?: unknown
 }
 
 export type PrintReporter = (report: TrackReport) => void

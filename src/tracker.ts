@@ -1,59 +1,33 @@
-import { ObjectType, Schema } from './schema'
+import { EnumType, IdentifierProperty, RootSchema, Schema, StringType } from './schema'
 import { PrintReporter, PropertyResult, TrackerOptions, TrackReport } from './types'
 
-export class Tracker<T extends { [key: string]: any }> {
-  private readonly summaryResult: Set<string> | undefined
-  private readonly identifierProperty?: Schema & { name: string }
+export class Tracker<T extends { [property: string]: any }> {
+  readonly schema: RootSchema
 
-  private trackedIds = new Set<string>()
+  private readonly printReporter: PrintReporter
+  private readonly summaryResult?: Set<string>
 
-  private propertiesOptionalList: Set<string> | undefined
-  private propertiesOptionalWithoutValue: Set<string> | undefined
-  private propertiesOptionalWithValue: Set<string> | undefined
+  private trackIdProcessor?: TrackIdProcessor
 
-  private propertiesRequiredValues: Map<string, Set<any>> | undefined
-
-  private enumValues: Record<string, Array<string | number>> = {}
-  private enumValuesUsed: Record<string, Record<string, true>> | undefined
-
-  readonly schema: ObjectType
-  readonly printReporter: PrintReporter
+  private propertiesOptional?: Map<string, { notNull?: boolean; isNull?: boolean }>
+  private propertiesRequired?: Map<string, Set<any>>
+  private enumValues?: Map<string, { values: Array<string | number>; used: Set<string | number> }>
 
   constructor({ schema, printReporter, logger, summaryResult }: TrackerOptions) {
+    if (!schema) {
+      throw new Error('schema is required')
+    }
     this.schema = schema
     this.printReporter = printReporter || createSimplePrintReporter(logger)
     this.summaryResult = summaryResult ? new Set<string>() : undefined
-
-    const identifierPropertyEntry = Object.entries(this.schema.properties)
-      .find(([_propertyName, property]) => property.id === true)
-    if (identifierPropertyEntry) {
-      if (!identifierPropertyEntry[1].required) {
-        throw new Error('Identifier property must be required')
-      }
-      this.identifierProperty = { name: identifierPropertyEntry[0], ...identifierPropertyEntry[1] }
-    }
+    this.trackIdProcessor = TrackIdProcessor.from(schema)
   }
 
   analyzeStart({ inspectData }: { inspectData?: boolean } = {}): void {
-    this.trackedIds = new Set<string>()
-    this.propertiesOptionalList = undefined
-    this.propertiesOptionalWithoutValue = undefined
-    this.propertiesOptionalWithValue = undefined
-
-    this.propertiesRequiredValues = undefined
-
-    this.enumValuesUsed = undefined
-
-    if (inspectData) {
-      this.propertiesOptionalList = new Set<string>()
-      this.propertiesOptionalWithoutValue = new Set<string>()
-      this.propertiesOptionalWithValue = new Set<string>()
-
-      this.propertiesRequiredValues = new Map<string, Set<any>>()
-
-      this.enumValues = {}
-      this.enumValuesUsed = {}
-    }
+    this.trackIdProcessor = TrackIdProcessor.from(this.schema)
+    this.propertiesOptional = inspectData ? new Map<string, { notNull?: boolean; isNull?: boolean }>() : undefined
+    this.propertiesRequired = inspectData ? new Map<string, Set<any>>() : undefined
+    this.enumValues = inspectData ? new Map<string, { values: Array<string | number>; used: Set<string | number> }>() : undefined
   }
 
   analyzeEndAsync(): Promise<TrackReport> {
@@ -67,28 +41,28 @@ export class Tracker<T extends { [key: string]: any }> {
   }
 
   analyzeEnd(): TrackReport {
-    if (!this.propertiesOptionalList) {
+    if (!this.propertiesOptional) {
       return { success: true, properties: [] }
     }
 
-    const propertiesOptional = [...this.propertiesOptionalList]
+    const propertiesOptional = Array.from(this.propertiesOptional)
     const propertiesAlwaysPresent = propertiesOptional
-      .filter((property) => !this.propertiesOptionalWithoutValue?.has(property))
-      .map((property): PropertyResult => ({
+      .filter(([_property, value]) => !value.isNull)
+      .map(([property]): PropertyResult => ({
         property,
         type: 'ALWAYS_PRESENT',
         description: 'optional property always present',
       }))
 
     const propertiesNeverUsed = propertiesOptional
-      .filter((property) => !this.propertiesOptionalWithValue?.has(property))
-      .map((property): PropertyResult => ({
+      .filter(([_property, value]) => !value.notNull)
+      .map(([property]): PropertyResult => ({
         property,
         type: 'NEVER_USED',
         description: 'optional property never used',
       }))
 
-    const propertiesSingleValue = [...this.propertiesRequiredValues!]
+    const propertiesSingleValue = Array.from(this.propertiesRequired!)
       .filter(([_property, valuesSet]) => valuesSet.size === 1)
       .map(([property, valuesSet]): PropertyResult => ({
         property,
@@ -97,19 +71,15 @@ export class Tracker<T extends { [key: string]: any }> {
         example: valuesSet.keys().next().value,
       }))
 
-    const propertiesEnumValuesUsed = Object.entries(this.enumValues || {})
-      .filter(([property, values]) => this.enumValuesUsed?.[property] && values.length)
-      .flatMap(([property, values]): PropertyResult[] => {
-        const valueNotUsed = values.filter((value) => !this.enumValuesUsed?.[property]?.[value])
-        const valuesUsed = Object.keys(this.enumValuesUsed?.[property] || {})
-        return valueNotUsed.length
-          ? [{
-            property,
-            type: 'ENUM_VALUES',
-            description: 'values used',
-            example: valuesUsed.sort().join("' | '"),
-          }]
-          : []
+    const propertiesEnumValuesUsed = Array.from(this.enumValues!)
+      .filter(([_property, { values, used }]) => values.some((value) => !used.has(value.toString())))
+      .map(([property, { used }]): PropertyResult => {
+        return {
+          property,
+          type: 'ENUM_VALUES',
+          description: 'values used',
+          example: Array.from(used).sort().join("' | '"),
+        }
       })
 
     const properties = [
@@ -128,23 +98,12 @@ export class Tracker<T extends { [key: string]: any }> {
 
   trackAndPrint(input: T): void {
     const report = this.track(input)
-
-    const summaryProperties = report.properties
-      .sort(({ property: propertyA }, { property: propertyB }) => {
-        return `${propertyA.split('.').length}${propertyA}`
-          .localeCompare(`${propertyB.split('.').length}${propertyB}`, 'en', { sensitivity: 'base' })
-      })
-      .slice(0, 20)
-
-    this.printReporter({
-      ...report,
-      properties: summaryProperties,
-    })
+    this.printReporter(report)
   }
 
-  track(input: T): TrackReport {
-    const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
-    const alreadyTracked = this.handleTrackedId(inputId)
+  track(input: T | null | undefined): TrackReport {
+    const inputId = this.schema.identifierProperty ? input?.[this.schema.identifierProperty] : undefined
+    const alreadyTracked = this.trackIdProcessor?.process(inputId) || []
 
     const processedProperties = alreadyTracked.length
       ? alreadyTracked
@@ -154,42 +113,31 @@ export class Tracker<T extends { [key: string]: any }> {
         namespace: '',
       })
 
+    const success = processedProperties.length === 0
+    if (!this.summaryResult) {
+      return { success, inputId, properties: processedProperties }
+    }
+
     const summaryProperties = processedProperties
       .filter((item) => {
-        if (!this.summaryResult) {
-          return true
-        }
         const resultKey = `${item.property}_${item.type}`
-        if (this.summaryResult.has(resultKey)) {
+        if (this.summaryResult!.has(resultKey)) {
           return false
         }
-        this.summaryResult.add(resultKey)
+        this.summaryResult!.add(resultKey)
         return true
       })
-
-    const success = summaryProperties.length === 0
 
     return { success, inputId, properties: summaryProperties }
   }
 
-  private handleTrackedId(inputId: string | undefined): PropertyResult[] {
-    if (inputId == null || !this.identifierProperty || this.identifierProperty?.multiple) {
-      return []
-    }
-    if (this.trackedIds.has(inputId)) {
-      return [{
-        property: this.identifierProperty.name,
-        type: 'ALREADY_TRACKED',
-        description: 'input already tracked',
-      }]
-    }
-    this.trackedIds.add(inputId)
-    return []
-  }
-
   private processProperties({ input, schema, namespace }: {
-    input: any
-    schema: Schema
+    input: unknown
+    schema: Schema & {
+      // For runtime optimization
+      simpleRequiredType?: boolean
+      propertiesList?: string[]
+    }
     namespace: string
   }): PropertyResult[] {
     if (schema == null) {
@@ -201,49 +149,54 @@ export class Tracker<T extends { [key: string]: any }> {
       }]
     }
 
-    if (schema.required && input == null) {
+    const inputIsNull = input == null
+    if (schema.required && inputIsNull) {
+      const hasEnumValues = 'items' in schema && 'values' in schema.items && Array.isArray(schema.items?.values)
       return [{
         property: namespace,
         type: 'REQUIRED',
         description: 'required property is missing',
-        example: 'items' in schema && 'values' in schema.items ? `Array<${schema.items?.values?.join(' | ')}>` : `[${schema.type}]`,
+        example: hasEnumValues ? `[${(schema.items as EnumType)?.values?.join(' | ')}]` : `[${schema.type}]`,
       }]
     }
 
-    if (!schema.required && !schema.ignoreUnusedProperty && !!namespace && this.propertiesOptionalList != null) {
-      this.propertiesOptionalList.add(namespace)
-
-      if (input == null) {
-        this.propertiesOptionalWithoutValue?.add(namespace)
-      } else {
-        this.propertiesOptionalWithValue?.add(namespace)
+    if (!schema.required && !schema.ignoreUnusedProperty && !!namespace && this.propertiesOptional != null) {
+      let propertyInfo = this.propertiesOptional.get(namespace)
+      if (propertyInfo == null) {
+        propertyInfo = {}
+        this.propertiesOptional.set(namespace, propertyInfo)
       }
+      propertyInfo.notNull = propertyInfo.notNull || !inputIsNull
+      propertyInfo.isNull = propertyInfo.isNull || inputIsNull
     }
 
-    if (input == null) {
+    if (inputIsNull) {
       return []
     }
+    if (schema.simpleRequiredType == null) {
+      schema.simpleRequiredType = schema.required
+        && !schema.ignoreUnusedProperty
+        && this.propertiesRequired != null
+        && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
+    }
 
-    if (
-      schema.required && !schema.ignoreUnusedProperty
-      && this.propertiesRequiredValues != null
-      && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
-    ) {
-      const propertyValues = this.propertiesRequiredValues.get(namespace) || new Set<any>()
+    if (schema.simpleRequiredType) {
+      const propertyValues = this.propertiesRequired!.get(namespace) || new Set<any>()
       if (propertyValues.size < 2) {
         propertyValues.add(input)
-        this.propertiesRequiredValues.set(namespace, propertyValues)
+        this.propertiesRequired!.set(namespace, propertyValues)
       }
     }
 
     if ('properties' in schema) {
-      const keysList = new Set<string>(Object.keys(schema.properties).concat(Object.keys(input)))
-      return [...keysList]
-        .flatMap<PropertyResult>((key) => {
-          const keyNamespace = namespace ? `${namespace}.${key}` : key
+      schema.propertiesList = schema.propertiesList || Object.keys(schema.properties)
+      const propertiesFullList = new Set<string>(schema.propertiesList.concat(Object.keys(input)))
+      return Array.from(propertiesFullList)
+        .flatMap<PropertyResult>((property) => {
+          const keyNamespace = namespace ? `${namespace}.${property}` : property
           return this.processProperties({
-            schema: schema.properties[key],
-            input: input[key],
+            schema: schema.properties[property],
+            input: (input as any)[property],
             namespace: keyNamespace,
           })
         })
@@ -256,29 +209,33 @@ export class Tracker<T extends { [key: string]: any }> {
       namespace,
     })
 
-    if ('items' in schema && 'properties' in schema.items && Array.isArray(input)) {
+    const isInputArray = Array.isArray(input)
+    const itemsInSchema = 'items' in schema
+    const itemsWithProperties = itemsInSchema && 'properties' in schema.items
+
+    if (itemsWithProperties && isInputArray) {
       const itemsResult = input
         .flatMap((value: any) => {
           return this.processProperties({
-            schema: { ...schema.items, required: schema.required },
+            schema: schema.required ? { ...schema.items, required: true } : schema.items,
             input: value,
             namespace,
           })
         })
 
-      return [inputResult, ...itemsResult]
+      return [inputResult].concat(itemsResult)
     }
 
-    if ('items' in schema && Array.isArray(input)) {
+    if (itemsInSchema && isInputArray) {
       const itemsResult = input
         .map((value: any) => {
           return this.checkProperty({
             schema: schema.items,
-            namespace,
             input: value,
+            namespace,
           })
         })
-      return [inputResult, ...itemsResult]
+      return [inputResult].concat(itemsResult)
     }
 
     return [inputResult]
@@ -286,18 +243,19 @@ export class Tracker<T extends { [key: string]: any }> {
 
   private checkProperty({ schema, input, namespace }: {
     namespace: string
-    schema: Schema
+    schema: Schema & {
+      // For runtime optimization
+      patternRegExp?: RegExp
+    }
     input: any
   }): PropertyResult {
     const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }
     if (input == null) {
       return resultOk
     }
-
+    const isStringOrNumber = typeof input === 'string' || typeof input === 'number'
     switch (schema.type) {
-      case 'string':
-      case 'number':
-      case 'boolean': {
+      case 'string': {
         if (typeof input !== schema.type) {
           return {
             property: namespace,
@@ -323,6 +281,39 @@ export class Tracker<T extends { [key: string]: any }> {
             example: `"${input}" (${valueLength})`,
           }
         }
+        if (schema.pattern && schema.type === 'string' && !schema.patternRegExp) {
+          schema.patternRegExp = new RegExp(schema.pattern)
+        }
+        if (schema.patternRegExp && !schema.patternRegExp!.test(input)) {
+          return {
+            property: namespace,
+            type: 'PATTERN',
+            description: `property value not match pattern ${schema.pattern}`,
+            example: input,
+          }
+        }
+        return resultOk
+      }
+      case 'boolean': {
+        if (typeof input !== schema.type) {
+          return {
+            property: namespace,
+            type: 'TYPE',
+            description: `property type is not ${schema.type}`,
+            example: JSON.stringify(input),
+          }
+        }
+        return resultOk
+      }
+      case 'number': {
+        if (typeof input !== schema.type) {
+          return {
+            property: namespace,
+            type: 'TYPE',
+            description: `property type is not ${schema.type}`,
+            example: JSON.stringify(input),
+          }
+        }
         if (schema.minimum != null && schema.type === 'number' && input < schema.minimum) {
           return {
             property: namespace,
@@ -339,33 +330,20 @@ export class Tracker<T extends { [key: string]: any }> {
             example: input,
           }
         }
-        if (schema.pattern && typeof schema.pattern === 'string') {
-          schema.pattern = new RegExp(schema.pattern)
-        }
-        if (schema.pattern && schema.type === 'string' && !(schema.pattern as RegExp).test(input)) {
-          return {
-            property: namespace,
-            type: 'PATTERN',
-            description: `property value not match pattern ${schema.pattern}`,
-            example: input,
-          }
-        }
         return resultOk
       }
       case 'enum': {
-        if (this.enumValuesUsed && !this.enumValues[namespace] && !schema.ignoreUnusedValues) {
-          this.enumValues[namespace] = schema.values
+        if (!schema.ignoreUnusedValues && this.enumValues && isStringOrNumber) {
+          let enumValues = this.enumValues.get(namespace)
+          // eslint-disable-next-line max-depth
+          if (enumValues == null) {
+            enumValues = { values: schema.values as string[], used: new Set<string | number>() }
+            this.enumValues.set(namespace, enumValues)
+          }
+          enumValues.used.add(input)
         }
 
-        if (this.enumValuesUsed && !this.enumValuesUsed[namespace]?.[input]) {
-          this.enumValuesUsed[namespace] = this.enumValuesUsed[namespace] || {}
-          this.enumValuesUsed[namespace][input] = true
-        }
-
-        if (
-          (typeof input === 'string' || typeof input === 'number')
-          && !schema.values.includes(input as any)
-        ) {
+        if (isStringOrNumber && !schema.values.includes(input as any)) {
           return {
             property: namespace,
             type: 'ENUM_UNKNOWN',
@@ -405,10 +383,14 @@ export class Tracker<T extends { [key: string]: any }> {
         return resultOk
       }
       default: {
+        const typeName = Array.isArray(schema)
+          ? `[${schema.map(({ type }) => type).join(' | ')}]`
+          : schema.type
+
         return {
           property: namespace,
           type: 'UNKNOWN_TYPE',
-          description: `unknown type ${schema.type}`,
+          description: `unknown type ${typeName}`,
           example: input,
         }
       }
@@ -418,12 +400,59 @@ export class Tracker<T extends { [key: string]: any }> {
 
 function createSimplePrintReporter(logger: (message: string) => void = console.log): PrintReporter {
   return (report: TrackReport): void => {
+    const summaryProperties = report.properties
+      .sort(({ property: propertyA }, { property: propertyB }) => {
+        return `${propertyA.split('.').length}${propertyA}`
+          .localeCompare(`${propertyB.split('.').length}${propertyB}`, 'en', { sensitivity: 'base' })
+      })
+      .slice(0, 20)
+
     const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
-    report.properties
+    summaryProperties
       .map((res) => {
         const exampleString = res.example ? `: ${res.example}` : ''
-        return `[${res.type}]${inputIdString} ${res.property} ${res.description}${exampleString}`
+        return `[Tracker]${inputIdString} ${res.property} ${res.description}${exampleString}`
       })
       .forEach((message) => logger(message))
+  }
+}
+
+class TrackIdProcessor {
+  private readonly trackedIds = new Set<string>()
+  private readonly identifierProperty: IdentifierProperty
+
+  static from(schema: RootSchema): TrackIdProcessor | undefined {
+    return schema.identifierProperty != null
+      ? new TrackIdProcessor(schema)
+      : undefined
+  }
+
+  private constructor(schema: RootSchema) {
+    if (schema.identifierProperty == null) {
+      throw new Error(`${schema.name} must have an identifier property`)
+    }
+
+    const property = schema.properties[schema.identifierProperty] as StringType
+    // @ts-expect-error
+    if (!property.required) {
+      throw new Error(`${schema.name}.${schema.identifierProperty} property must be required`)
+    }
+
+    this.identifierProperty = { name: schema.identifierProperty, ...property }
+  }
+
+  process(inputId: string | undefined): PropertyResult[] {
+    if (inputId == null || this.identifierProperty?.multiple) {
+      return []
+    }
+    if (this.trackedIds.has(inputId)) {
+      return [{
+        property: this.identifierProperty.name,
+        type: 'ALREADY_TRACKED',
+        description: 'input already tracked',
+      }]
+    }
+    this.trackedIds.add(inputId)
+    return []
   }
 }
