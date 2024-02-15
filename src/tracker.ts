@@ -39,10 +39,10 @@ export class Tracker<T extends { [key: string]: any }> {
   private enumValues: Record<string, Array<string | number>> = {}
   private enumValuesUsed: Record<string, Record<string, true>> | undefined
 
-  readonly schema: Schema & ObjectType
+  readonly schema: ObjectType
 
   constructor({ schema, logger, summaryResult }: {
-    schema: Schema & ObjectType
+    schema: ObjectType
     logger?: (message: string) => void
     summaryResult?: boolean
   }) {
@@ -78,9 +78,8 @@ export class Tracker<T extends { [key: string]: any }> {
   }
 
   analyzeStats(): void {
-    this.summarizeProperties()
-      .map((res) => `[${res.type}] ${res.property} ${res.description}${res.example ? `: ${res.example}` : ''}`)
-      .forEach((message) => this.logger(message))
+    const results = this.summarizeProperties()
+    this.printResultProperties(results)
   }
 
   summarizeProperties(): PropertyResult[] {
@@ -137,23 +136,48 @@ export class Tracker<T extends { [key: string]: any }> {
     ]
   }
 
-  track(input: T): void {
-    const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
-    inputId && !this.identifierProperty?.multiple && this.checkIfAlreadyTracked(inputId)
+  trackAsync(input: T): Promise<PropertyResult[]> {
+    const result = this.track(input)
+    return Promise.resolve(result)
+  }
 
-    const badProperties = this.analyzeProperties(input)
-    if (!badProperties.length) {
-      return
+  track(input: T): PropertyResult[] {
+    const inputId = this.identifierProperty ? input[this.identifierProperty.name] : undefined
+    if (inputId != null && !this.identifierProperty?.multiple) {
+      this.checkIfAlreadyTracked(inputId)
     }
 
-    badProperties
+    const badProperties = this.analyzeProperties(input)
+    const badPropertiesSorted = badProperties
       .sort(({ property: propertyA }, { property: propertyB }) => {
         return `${propertyA.split('.').length}${propertyA}`
           .localeCompare(`${propertyB.split('.').length}${propertyB}`, 'en', { sensitivity: 'base' })
       })
       .slice(0, 20)
-      .map((res) => `[${res.type}] ${inputId || ''} ${res.property} ${res.description || ''}${res.example ? `: ${res.example}` : ''}`)
-      .forEach((message) => this.logger(message))
+
+    this.printResultProperties(badPropertiesSorted, inputId)
+    return badProperties
+  }
+
+  analyzeProperties(input: T): PropertyResult[] {
+    const processedProperties = this.processProperties({
+      input,
+      schema: this.schema,
+      namespace: '',
+    })
+
+    return processedProperties
+      .filter((item) => {
+        if (!this.summaryResult) {
+          return true
+        }
+        const resultKey = `${item.property}_${item.type}`
+        if (this.summaryResult.has(resultKey)) {
+          return false
+        }
+        this.summaryResult.add(resultKey)
+        return true
+      })
   }
 
   private checkIfAlreadyTracked(inputId: string): void {
@@ -168,23 +192,14 @@ export class Tracker<T extends { [key: string]: any }> {
     this.ids[inputId] = true
   }
 
-  analyzeProperties(input: T): PropertyResult[] {
-    return this.processProperties({
-      input,
-      schema: this.schema,
-      namespace: '',
-    })
-      .filter((item) => {
-        if (!this.summaryResult) {
-          return true
-        }
-        const resultKey = `${item.property}_${item.type}`
-        if (this.summaryResult.has(resultKey)) {
-          return false
-        }
-        this.summaryResult.add(resultKey)
-        return true
+  private printResultProperties(items: PropertyResult[], inputId?: string | number): void {
+    const inputIdString = inputId != null ? ` ${inputId}` : ''
+    items
+      .map((res) => {
+        const exampleString = res.example ? `: ${res.example}` : ''
+        return `[${res.type}]${inputIdString} ${res.property} ${res.description}${exampleString}`
       })
+      .forEach((message) => this.logger(message))
   }
 
   private processProperties({ input, schema, namespace }: {

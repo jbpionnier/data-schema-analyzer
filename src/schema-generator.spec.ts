@@ -1,4 +1,4 @@
-import { SchemaGenerator } from './schema-generator'
+import { SchemaGenerator } from './'
 
 describe('Schema Generator', () => {
   it('should generate schema', () => {

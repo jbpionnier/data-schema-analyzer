@@ -22,8 +22,6 @@ const tracker = new Tracker<StubType>({
   },
 })
 
-tracker.initialize({ inspectData: true })
-
 tracker.track({ id: 1, name: 'John Doe', age: 'Not a number' })
 tracker.track({ id: 2, name: 'Kevin', age: -5 })
 // ...

@@ -1,6 +1,5 @@
+import { SchemaGenerator, Tracker } from './'
 import { Schema } from './schema'
-import { SchemaGenerator } from './schema-generator'
-import { Tracker } from './tracker'
 
 type SimpleType = {
   /**
