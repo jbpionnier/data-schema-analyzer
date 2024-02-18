@@ -29,7 +29,7 @@ const tracker = createTracker({
     },
   },
 })
-tracker.analyzeStart({ inspectData: true })
+tracker.analyzeStart({ inspectValues: true })
 
 let i = 0
 

@@ -1,6 +1,5 @@
 {
   "name": "StubType",
-  "identifierProperty": "myString",
   "type": "object",
   "properties": {
     "myString": {

@@ -42,15 +42,12 @@ export type Schema = ValueType & {
 }
 
 export type ObjectProperties = {
-  [key: string]: Schema
+  [key: string]: Schema | undefined
 }
 
 export type RootSchema = ObjectType & {
   name: string
-  identifierProperty?: string
 }
-
-export type IdentifierProperty = StringType & { name: string }
 
 export function getIdentifierPropertyName(schema: ObjectType): string | undefined {
   // @ts-expect-error

@@ -1,6 +1,6 @@
-import { SchemaGenerator, Tracker } from './'
-import { getIdentifierPropertyName, ObjectType, Schema } from './schema'
-import { PropertyResult, TrackReport } from './types'
+import { SchemaGenerator, Tracker } from '../index'
+import { ObjectType, Schema } from '../schema'
+import { PropertyResult, TrackReport } from './index'
 
 type SimpleType = {
   /**
@@ -62,7 +62,7 @@ describe('Tracker', () => {
       expect(track({ id: 1 })).toEqual([])
     })
 
-    it('should return already tracked warning with id property', () => {
+    it('should return already tracked warning with id property summary', () => {
       const track = createTracker<{ id: number }>({
         id: { type: 'number', id: true, required: true },
       }, { summaryResult: true })
@@ -75,6 +75,21 @@ describe('Tracker', () => {
       ])
 
       expect(track({ id: 1 })).toEqual([])
+    })
+    it('should return already tracked warning with id property', () => {
+      const track = createTracker<{ id: number }>({
+        id: { type: 'number', id: true, required: true },
+      })
+
+      expect(track({ id: 1 })).toEqual([])
+      expect(track({ id: 2 })).toEqual([])
+
+      expect(track({ id: 1 })).toEqual([
+        { property: 'id', type: 'ALREADY_TRACKED', description: 'input already tracked' },
+      ])
+      expect(track({ id: 1 })).toEqual([
+        { property: 'id', type: 'ALREADY_TRACKED', description: 'input already tracked' },
+      ])
     })
 
     it('should return min/max length and pattern warning for string property', () => {
@@ -89,7 +104,7 @@ describe('Tracker', () => {
         { property: 'name', type: 'MAX_LENGTH', description: 'property length is too long (8 maximum)', example: '"Jean Kevin" (10)' },
       ])
       expect(track({ name: 'foo bar' })).toEqual([
-        { property: 'name', type: 'PATTERN', description: 'property value not match pattern ^\\w+$', example: 'foo bar' },
+        { property: 'name', type: 'PATTERN', description: 'property format is invalid', example: 'foo bar' },
       ])
       expect(track({ name: 35 } as any)).toEqual([
         { property: 'name', type: 'TYPE', description: 'property type is not string', example: '35' },
@@ -155,19 +170,20 @@ describe('Tracker', () => {
 
   describe('analyze', () => {
     const successReport: TrackReport = { success: true, properties: [] }
+    let generator: SchemaGenerator
     let tracker: Tracker<SimpleType>
 
     beforeAll(() => {
-      const generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
-      const schema = generator.generate({
-        sourceFiles: ['src/tracker.spec.ts'],
-        rootInterfaceName: 'SimpleType',
-      })
-      tracker = new Tracker<SimpleType>({ schema })
+      generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
     })
 
     beforeEach(() => {
-      tracker.analyzeStart({ inspectData: true })
+      const schema = generator.generate({
+        sourceFiles: ['src/tracker/tracker.spec.ts'],
+        rootInterfaceName: 'SimpleType',
+      })
+      tracker = new Tracker<SimpleType>({ schema })
+      tracker.analyzeStart()
     })
 
     it('should return always present', async () => {
@@ -340,7 +356,7 @@ function createTracker<T extends { [key: string]: any }>(
   options: { summaryResult?: true } = {},
 ): (input: T) => PropertyResult[] {
   const tracker = new Tracker<T>({
-    schema: { type: 'object', identifierProperty: getIdentifierPropertyName({ properties } as any), properties } as any,
+    schema: { type: 'object', properties } as any,
     ...options,
   })
 

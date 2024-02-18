@@ -1,26 +1,20 @@
-import { RootSchema } from './schema'
+import { RootSchema } from '../schema'
 
 export type TrackerOptions = {
   /**
    * The schema to track
    */
   schema: RootSchema
-  printReporter?: PrintReporter
+  /**
+   * If true, the tracker will return only one report by property
+   */
+  summaryResult?: boolean
   /**
    * A function to log messages
    * @param message
    */
   logger?: (message: string) => void
-  /**
-   * If true, the tracker will return only one report by property
-   */
-  summaryResult?: boolean
-}
-
-export type TrackReport = {
-  success: boolean
-  inputId?: string | number
-  properties: PropertyResult[]
+  printReporter?: PrintReporter
 }
 
 export type PropertyResult = {
@@ -48,4 +42,20 @@ export type PropertyResult = {
   example?: unknown
 }
 
+export type PropertyValidation = Array<(input: any) => PropertyResult | undefined | void>
+
+export type PropertiesValidation = Array<(input: any) => PropertyResult[] | undefined | void>
+
+export type Reporters = Array<() => PropertyResult | undefined | void>
+
+export type TrackReport = {
+  success: boolean
+  inputId?: string | number
+  properties: PropertyResult[]
+}
+
 export type PrintReporter = (report: TrackReport) => void
+
+export function getInputType(input: any): string {
+  return Array.isArray(input) ? 'array' : typeof input
+}

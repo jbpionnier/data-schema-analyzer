@@ -1,5 +1,4 @@
-import { Schema } from '../schema'
-import { Tracker } from '../tracker'
+import { Schema, Tracker } from '../index'
 
 export function createTracker<T extends { [key: string]: any }>(
   properties: { [property: string]: Schema },

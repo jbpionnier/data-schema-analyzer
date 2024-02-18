@@ -1,6 +1,5 @@
 // @ts-expect-error
 import Benchmark from 'benchmark'
-
 import objectBenchmarks from './object'
 import realworld from './realworld'
 

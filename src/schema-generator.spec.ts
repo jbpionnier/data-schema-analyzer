@@ -12,7 +12,6 @@ describe('Schema Generator', () => {
     const rootSchemaJson: RootSchema = {
       name: 'StubType',
       type: 'object',
-      identifierProperty: 'myString',
       properties: {
         myString: { minLength: 1, maxLength: 3, pattern: '^\\w+$', id: true, required: true, type: 'string' },
         myNumber: { type: 'number' },
