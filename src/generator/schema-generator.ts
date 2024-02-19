@@ -2,7 +2,7 @@ import * as fs from 'node:fs'
 import * as Path from 'path'
 import { ArrayTypeNode, Identifier, InterfaceDeclaration, JSDocableNode, Node, Project, PropertySignature, SourceFile, ts, TupleTypeNode,
   TypeAliasDeclaration, TypeLiteralNode, TypeNode, TypeReferenceNode, UnionTypeNode } from 'ts-morph'
-import { ArrayType, EnumType, ObjectProperties, ObjectType, PrimitiveType, RootSchema, Schema, ValueType } from './schema'
+import { ArrayType, EnumType, ObjectProperties, ObjectType, PrimitiveType, RootSchema, Schema, ValueType } from '../schema'
 
 export type GenerateOptions = {
   rootInterfaceName: string

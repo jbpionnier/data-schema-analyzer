@@ -1,7 +1,7 @@
-import { SchemaGenerator, Tracker } from '../index'
+import { SchemaGenerator, Tracker } from '../'
 import { ObjectType, Schema } from '../schema'
+import { PropertyResult, TrackReport } from './'
 import { Analyze } from './analyze'
-import { PropertyResult, TrackReport } from './index'
 
 type SimpleType = {
   /**
@@ -28,6 +28,15 @@ type SimpleType = {
 
 describe('Tracker', () => {
   describe('track', () => {
+    it('should return required warning for property', () => {
+      const track = createTracker<{ name: string }>({
+        name: { type: 'string', required: true },
+      })
+
+      expect(track({} as any)).toEqual([
+        { property: 'name', type: 'REQUIRED', description: 'required property is missing', example: '[string]' },
+      ])
+    })
     it('should return required and unknown warning for property', () => {
       const track = createTracker<{ name: string }>({
         name: { type: 'string', required: true },
@@ -173,17 +182,18 @@ describe('Tracker', () => {
     const successReport: TrackReport = { success: true, properties: [] }
     let generator: SchemaGenerator
     let analyze: Analyze<SimpleType>
+    let tracker: Tracker<SimpleType>
 
     beforeAll(() => {
       generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
-    })
-
-    beforeEach(() => {
       const schema = generator.generate({
         sourceFiles: ['src/tracker/tracker.spec.ts'],
         rootInterfaceName: 'SimpleType',
       })
-      const tracker = new Tracker<SimpleType>({ schema })
+      tracker = new Tracker<SimpleType>({ schema })
+    })
+
+    beforeEach(() => {
       analyze = tracker.analyze()
     })
 

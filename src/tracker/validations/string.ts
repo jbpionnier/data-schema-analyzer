@@ -1,14 +1,10 @@
 import { StringType } from '../../schema'
-import { PropertyValidation } from '../index'
+import { PropertyValidationParams } from './'
 
-export function stringValidators({ namespace, schema, validations }: {
-  schema: StringType
-  validations: PropertyValidation
-  namespace: string
-}): void {
+export function stringValidations({ namespace, schema, validations }: PropertyValidationParams<StringType>): void {
   if (schema.minLength != null) {
     validations.push((input: any) => {
-      const valueLength = input?.toString().length
+      const valueLength = input.toString().length
       if (valueLength < schema.minLength!) {
         return {
           property: namespace,
@@ -21,7 +17,7 @@ export function stringValidators({ namespace, schema, validations }: {
   }
   if (schema.maxLength != null) {
     validations.push((input: any) => {
-      const valueLength = input?.toString().length
+      const valueLength = input.toString().length
       if (valueLength > schema.maxLength!) {
         return {
           property: namespace,
@@ -35,7 +31,7 @@ export function stringValidators({ namespace, schema, validations }: {
   if (schema.pattern && schema.type === 'string') {
     const patternRegExp = new RegExp(schema.pattern)
     validations.push((input: any) => {
-      if (!patternRegExp!.test(input)) {
+      if (!patternRegExp.test(input)) {
         return {
           property: namespace,
           type: 'PATTERN',

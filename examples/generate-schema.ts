@@ -24,7 +24,7 @@ const report = analyze.track({
 })
 
 console.log('Report ok !')
-if (report.properties.length != 10) {
-  console.error('Expected 10 properties, got', report.properties.length)
+if (report.properties.length != 9) {
+  console.error('Expected 9 properties, got', report.properties.length)
   process.exit(1)
 }

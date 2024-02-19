@@ -1,11 +1,7 @@
 import { NumberType } from '../../schema'
-import { PropertyValidation } from '../index'
+import { PropertyValidationParams } from './'
 
-export function numberValidators({ namespace, schema, validations }: {
-  schema: NumberType
-  validations: PropertyValidation
-  namespace: string
-}): void {
+export function numberValidations({ namespace, schema, validations }: PropertyValidationParams<NumberType>): void {
   if (schema.minimum != null && schema.type === 'number') {
     validations.push((input: any) => {
       if (input < schema.minimum!) {

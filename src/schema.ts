@@ -1,5 +1,15 @@
+export type TypeName =
+  | 'string'
+  | 'number'
+  // | 'integer'
+  | 'enum'
+  | 'boolean'
+  | 'object'
+  | 'array'
+  | 'null'
+
 export type PrimitiveType = {
-  type: 'boolean' | 'any' | 'object' | 'null'
+  type: 'boolean' | 'object' | 'null'
   ref?: string
 }
 export type StringType = {
@@ -47,11 +57,4 @@ export type ObjectProperties = {
 
 export type RootSchema = ObjectType & {
   name: string
-}
-
-export function getIdentifierPropertyName(schema: ObjectType): string | undefined {
-  // @ts-expect-error
-  const [identifierPropertyName] = Object.entries<StringType>(schema.properties)
-    .find(([_propertyName, property]) => property.id === true) || []
-  return identifierPropertyName
 }

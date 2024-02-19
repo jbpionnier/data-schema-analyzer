@@ -1,11 +1,11 @@
-import { getIdentifierPropertyName, RootSchema } from '../schema'
+import { ObjectType, RootSchema, StringType } from '../schema'
 import { Analyze, AnalyzeAndInpect, AnalyzeOptions } from './analyze'
-import { PrintReporter, PropertyResult, TrackerOptions } from './index'
+import { Namespace, PrintReporter, PropertyResult, TrackerOptions } from './index'
 import { createSimplePrintReporter } from './reporter'
 
 export class Tracker<T extends { [property: string]: any }> {
   readonly schema: RootSchema
-  private readonly identifierPropertyName: string | undefined
+  private readonly identifierPropertyName: Namespace | undefined
   private readonly printReporter: PrintReporter
   private readonly summaryResult: boolean
 
@@ -50,4 +50,11 @@ function filterSummaryResults(): (properties: PropertyResult[]) => PropertyResul
       return true
     })
   }
+}
+
+function getIdentifierPropertyName(schema: ObjectType): Namespace | undefined {
+  // @ts-expect-error
+  const [identifierPropertyName] = Object.entries<StringType>(schema.properties)
+    .find(([_propertyName, property]) => property.id === true) || []
+  return identifierPropertyName as Namespace
 }

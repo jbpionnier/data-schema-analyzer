@@ -1,31 +1,36 @@
 import { RootSchema } from '../schema'
-import { PrintReporter, PropertyResult, Reporters, TrackReport } from './index'
-import { PropertyValidator } from './validator'
-import { getObjectValidator } from './validators/base'
-import { getIdentifierValidator } from './validators/object'
+import { Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
+import { getIdentifierValidator } from './identifier-validator'
+import { ObjectValidator } from './object-validator'
+import { PropertyValidator } from './property-validator'
 
 export type AnalyzeOptions = {
   schema: RootSchema
-  identifierPropertyName: string | undefined
+  identifierPropertyName: Namespace | undefined
   printReporter: PrintReporter
   filterProperties: (properties: PropertyResult[]) => PropertyResult[]
 }
 
+export type AnalyzeId = `AnalyzeId:${number}:${number}`
+
 export class Analyze<T extends { [property: string]: any }> {
+  readonly id: AnalyzeId
+
   private readonly schema: RootSchema
   private readonly printReporter: PrintReporter
   private readonly filterProperties: (properties: PropertyResult[]) => PropertyResult[]
-  private readonly identifierPropertyName?: string
+  private readonly identifierPropertyName?: Namespace
   private readonly identifierValidator?: PropertyValidator
 
   constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeOptions) {
+    this.id = `AnalyzeId:${Date.now()}:${Math.random()}`
     this.schema = schema
     this.printReporter = printReporter
     this.filterProperties = filterProperties
 
     this.identifierPropertyName = identifierPropertyName
     this.identifierValidator = identifierPropertyName
-      ? getIdentifierValidator(identifierPropertyName, schema)
+      ? getIdentifierValidator({ analyzeId: this.id, identifierPropertyName, schema })
       : undefined
   }
 
@@ -66,7 +71,12 @@ export class Analyze<T extends { [property: string]: any }> {
     if (alreadyTracked) {
       return [alreadyTracked]
     }
-    const validator = getObjectValidator({ namespace: '', schema: this.schema, reporting })
+    const validator = ObjectValidator.from({
+      analyzeId: this.id,
+      schema: this.schema,
+      reporting,
+      namespace: '' as Namespace,
+    })
     return validator.validate(input)
   }
 }

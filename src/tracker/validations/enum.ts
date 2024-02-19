@@ -1,17 +1,12 @@
 import { EnumType } from '../../schema'
-import { getInputType, PropertyValidation, Reporters } from '../index'
+import { getInputType, PropertyValidationParams } from './'
 
-export function enumValidators({ namespace, schema, validations, reporting }: {
-  schema: EnumType
-  validations: PropertyValidation
-  reporting: Reporters | undefined
-  namespace: string
-}): void {
+export function enumValidations({ namespace, schema, validations, reporting }: PropertyValidationParams<EnumType>): void {
   if (!schema.ignoreUnusedValues && reporting) {
-    const valuesUsed = new Set<string | number>()
+    const valuesUsed = new Set<any>()
 
     reporting.push(() => {
-      if (schema.values.some((value) => !valuesUsed.has(value.toString()))) {
+      if (schema.values.some((value) => !valuesUsed.has(value))) {
         return {
           property: namespace,
           type: 'ENUM_VALUES',

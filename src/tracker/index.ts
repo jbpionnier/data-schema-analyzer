@@ -1,5 +1,8 @@
 import { RootSchema } from '../schema'
 
+export { Analyze } from './analyze'
+export { Tracker } from './tracker'
+
 export type TrackerOptions = {
   /**
    * The schema to track
@@ -17,8 +20,10 @@ export type TrackerOptions = {
   printReporter?: PrintReporter
 }
 
+export type Namespace = `${string}.${string}`
+
 export type PropertyResult = {
-  property: string
+  property: Namespace
   type:
     | 'OK'
     | 'ALREADY_TRACKED'
@@ -42,10 +47,6 @@ export type PropertyResult = {
   example?: unknown
 }
 
-export type PropertyValidation = Array<(input: any) => PropertyResult | undefined | void>
-
-export type PropertiesValidation = Array<(input: any) => PropertyResult[] | undefined | void>
-
 export type Reporters = Array<() => PropertyResult | undefined | void>
 
 export type TrackReport = {
@@ -55,7 +56,3 @@ export type TrackReport = {
 }
 
 export type PrintReporter = (report: TrackReport) => void
-
-export function getInputType(input: any): string {
-  return Array.isArray(input) ? 'array' : typeof input
-}

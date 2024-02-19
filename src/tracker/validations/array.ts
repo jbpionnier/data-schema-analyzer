@@ -1,15 +1,11 @@
 import { ArrayType } from '../../schema'
-import { PropertyResult, PropertyValidation } from '../index'
+import { PropertyResult } from '../'
+import { PropertyValidationParams } from './'
 
-export function arrayValidators({ namespace, schema, validations }: {
-  schema: ArrayType
-  validations: PropertyValidation
-  namespace: string
-}): void {
+export function arrayValidations({ namespace, schema, validations }: PropertyValidationParams<ArrayType>): void {
   const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }
   validations.push((input: any) => {
-    const valueLength = (input as any[]).length
-    if (valueLength == null) {
+    if (!Array.isArray(input)) {
       return resultOk
     }
   })

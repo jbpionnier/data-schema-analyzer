@@ -1,5 +1,5 @@
-import { SchemaGenerator } from './'
-import { RootSchema } from './schema'
+import { SchemaGenerator } from '../index'
+import { RootSchema } from '../schema'
 
 describe('Schema Generator', () => {
   it('should generate schema', () => {

@@ -1,3 +1,3 @@
+export { SchemaGenerator } from './generator/schema-generator'
 export { RootSchema, Schema } from './schema'
-export { SchemaGenerator } from './schema-generator'
-export { Tracker } from './tracker/tracker'
+export { Analyze, Tracker } from './tracker'
