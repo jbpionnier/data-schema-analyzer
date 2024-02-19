@@ -1,10 +1,10 @@
 // @ts-expect-error
 import Benchmark from 'benchmark'
-import { createTracker } from './shared'
+import { createAnalyze } from './shared'
 
 const shortSuite = new Benchmark.Suite('realworld')
 
-const tracker = createTracker({
+const analyze = createAnalyze({
   type: { type: 'enum', values: ['person'] },
   hair: { type: 'enum', values: ['blue', 'brown'] },
   active: { type: 'boolean' },
@@ -29,7 +29,6 @@ const tracker = createTracker({
     },
   },
 })
-tracker.analyzeStart({ inspectValues: true })
 
 let i = 0
 
@@ -64,7 +63,7 @@ const peoples = Array.from({ length: 100 }, () => {
 shortSuite
   .add('valid', () => {
     peoples.forEach((people) => {
-      const report = tracker.track(people)
+      const report = analyze.track(people)
       if (!report.success) {
         console.error(report)
         throw new Error('Invalid')

@@ -14,8 +14,8 @@ fs.writeFileSync('./examples/stub-type-schema.json', JSON.stringify(stubTypeSche
 
 // Track a data from schema json
 const tracker = new Tracker<any>({ schema: stubTypeSchema })
-
-const report = tracker.track({
+const analyze = tracker.analyze()
+const report = analyze.track({
   myListNumber: [],
   myListString: [],
   myString: '',

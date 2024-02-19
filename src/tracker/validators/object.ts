@@ -91,10 +91,7 @@ function getPropertyValidation({ namespace, schema, reporting }: {
   return validations
 }
 
-export function getIdentifierValidator(identifierPropertyName: string | undefined, schema: RootSchema): PropertyValidator | undefined {
-  if (identifierPropertyName == null) {
-    return
-  }
+export function getIdentifierValidator(identifierPropertyName: string, schema: RootSchema): PropertyValidator {
   const property = schema.properties[identifierPropertyName]
   if (!property?.required) {
     throw new Error(`${schema.name}.${identifierPropertyName} property must be required`)

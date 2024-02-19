@@ -1,5 +1,6 @@
 import { SchemaGenerator, Tracker } from '../index'
 import { ObjectType, Schema } from '../schema'
+import { Analyze } from './analyze'
 import { PropertyResult, TrackReport } from './index'
 
 type SimpleType = {
@@ -171,7 +172,7 @@ describe('Tracker', () => {
   describe('analyze', () => {
     const successReport: TrackReport = { success: true, properties: [] }
     let generator: SchemaGenerator
-    let tracker: Tracker<SimpleType>
+    let analyze: Analyze<SimpleType>
 
     beforeAll(() => {
       generator = new SchemaGenerator({ tsConfigFilePath: './tsconfig.spec.json' })
@@ -182,12 +183,12 @@ describe('Tracker', () => {
         sourceFiles: ['src/tracker/tracker.spec.ts'],
         rootInterfaceName: 'SimpleType',
       })
-      tracker = new Tracker<SimpleType>({ schema })
-      tracker.analyzeStart()
+      const tracker = new Tracker<SimpleType>({ schema })
+      analyze = tracker.analyze()
     })
 
     it('should return always present', async () => {
-      const report = await tracker
+      const report = await analyze
         .trackAsync({
           name: 'Kevin',
           age: 35,
@@ -197,7 +198,7 @@ describe('Tracker', () => {
         })
       expect(report).toEqual(successReport)
 
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Jean',
           firstName: 'Kevin',
@@ -206,7 +207,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = await tracker.analyzeEndAsync()
+      const result = analyze.end()
       expect(result)
         .toEqual({
           success: false,
@@ -219,7 +220,7 @@ describe('Tracker', () => {
     })
 
     it('should return always present with nested object', async () => {
-      const report = await tracker
+      const report = await analyze
         .trackAsync({
           name: 'Kevin',
           age: 35,
@@ -229,7 +230,7 @@ describe('Tracker', () => {
         })
       expect(report).toEqual(successReport)
 
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Jean',
           firstName: 'Kevin',
@@ -238,7 +239,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = await tracker.analyzeEndAsync()
+      const result = analyze.end()
       expect(result)
         .toEqual({
           success: false,
@@ -251,7 +252,7 @@ describe('Tracker', () => {
     })
 
     it('should return never used', () => {
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Jean',
           age: 35,
@@ -260,7 +261,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Kevin',
           info: { gender: 'WOMAN' },
@@ -268,7 +269,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = tracker.analyzeEnd()
+      const result = analyze.end()
       expect(result)
         .toEqual({
           success: false,
@@ -281,7 +282,7 @@ describe('Tracker', () => {
     })
 
     it('should return single value', () => {
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Kevin',
           age: 35,
@@ -290,7 +291,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Kevin',
           firstName: 'Jean',
@@ -299,7 +300,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = tracker.analyzeEnd()
+      const result = analyze.end()
       expect(result)
         .toEqual({
           success: false,
@@ -313,7 +314,7 @@ describe('Tracker', () => {
     })
 
     it('should return enum values used', () => {
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Jean',
           age: 35,
@@ -322,7 +323,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      expect(tracker
+      expect(analyze
         .track({
           name: 'Kevin',
           firstName: 'Kevin',
@@ -331,7 +332,7 @@ describe('Tracker', () => {
         }))
         .toEqual(successReport)
 
-      const result = tracker.analyzeEnd()
+      const result = analyze.end()
       expect(result)
         .toEqual({
           success: false,
@@ -360,8 +361,10 @@ function createTracker<T extends { [key: string]: any }>(
     ...options,
   })
 
+  const analyze = tracker.analyze()
+
   return (input: T) => {
-    const report = tracker.track(input)
+    const report = analyze.track(input)
     return report.properties
   }
 }

@@ -25,11 +25,14 @@ const tracker = new Tracker<StubType>({
   },
 })
 
-tracker.track({ id: 1, name: 'John Doe', age: 'Not a number' })
-tracker.track({ id: 2, name: 'Kevin', age: -5 })
+const analyze = tracker.analyze()
+
+//...
+analyze.track({ id: 1, name: 'John Doe', age: 'Not a number' })
+analyze.track({ id: 2, name: 'Kevin', age: -5 })
 // ...
 
-tracker.analyzeEnd()
+analyze.endAndPrint()
 
 // Prints
 // [TYPE] age property type is not number: "Not a number"

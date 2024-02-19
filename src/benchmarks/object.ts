@@ -1,16 +1,16 @@
 // @ts-expect-error
 import Benchmark from 'benchmark'
-import { createTracker } from './shared'
+import { createAnalyze } from './shared'
 
 const emptySuite = new Benchmark.Suite('parse: empty')
 const shortSuite = new Benchmark.Suite('parse: short')
 const longSuite = new Benchmark.Suite('parse: long')
 
-const empty = createTracker({})
-const short = createTracker({
+const empty = createAnalyze({})
+const short = createAnalyze({
   string: { type: 'string' },
 })
-const long = createTracker({
+const long = createAnalyze({
   string: { type: 'string' },
   number: { type: 'number' },
   boolean: { type: 'boolean' },
