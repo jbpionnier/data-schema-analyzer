@@ -26,7 +26,9 @@ export type NumberType = {
   id?: true
   multiple?: true
   minimum?: number
+  exclusiveMinimum?: number
   maximum?: number
+  exclusiveMaximum?: number
 }
 export type EnumType = {
   type: 'enum'

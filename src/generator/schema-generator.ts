@@ -249,7 +249,8 @@ function getJsDocTags(node: JSDocableNode): { [name: string]: any } {
 }
 
 function convertTags(tags: { [name: string]: any }): { [name: string]: any } {
-  const numberAttrs = ['minItems', 'maxItems', 'minimum', 'maximum', 'minLength', 'maxLength']
+  const numberAttrs = ['minItems', 'maxItems', 'minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'minLength', 'maxLength']
+
   return numberAttrs.reduce((newTags, name) => {
     if (tags[name] != null) {
       newTags[name] = getTagValue(tags[name], 'number')

@@ -53,7 +53,9 @@
         "age": {
           "required": true,
           "minimum": 1,
+          "exclusiveMinimum": 0,
           "maximum": 99,
+          "exclusiveMaximum": 100,
           "type": "number"
         }
       }

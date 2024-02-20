@@ -126,14 +126,27 @@ describe('Tracker', () => {
         age: { type: 'number', minimum: 0, maximum: 99 },
       })
 
-      expect(track({ age: -1 })).toEqual([
-        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: -1 },
+      expect(track({ age: 0 })).toEqual([
+        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: 0 },
       ])
-      expect(track({ age: 200 })).toEqual([
-        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 200 },
+      expect(track({ age: 99 })).toEqual([
+        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 99 },
       ])
       expect(track({ age: '35' } as any)).toEqual([
         { property: 'age', type: 'TYPE', description: 'property type is not number', example: '"35"' },
+      ])
+    })
+
+    it('should return min/max exclusive warning for number property', () => {
+      const track = createTracker<{ age: number }>({
+        age: { type: 'number', exclusiveMinimum: 0, exclusiveMaximum: 99 },
+      })
+
+      expect(track({ age: -1 })).toEqual([
+        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: -1 },
+      ])
+      expect(track({ age: 100 })).toEqual([
+        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 100 },
       ])
     })
 

@@ -20,7 +20,9 @@ export type StubType = {
     subProp?: string
     /**
      * @minimum 1
+     * @exclusiveMinimum 0
      * @maximum 99
+     * @exclusiveMaximum 100
      */
     age: number
   }

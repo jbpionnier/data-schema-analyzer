@@ -72,7 +72,7 @@ const stubTypeSchema = generator.generate({
 
 <!--
 Getting started
-
+Ressources
 https://github.com/PengJiyuan/ts-document
 https://github.com/xdoer/json-types-generator
 https://github.com/idurar/fast-graphql
@@ -81,8 +81,11 @@ https://github.com/nijikokun/generate-schema
 https://github.com/xiag-ag/typescript-to-json-schema
 https://github.com/timqian/gql-generator
 
-https://ts-morph.com/manipulation/structures
-https://ts-ast-viewer.com/
+# Generator AST to JSON
 https://github.com/PengJiyuan/ts-document/blob/main/src/generate.ts
 https://github.com/max-team/typescript-to-json-schema/blob/master/src/util.ts
+
+TS Morph
+https://ts-morph.com/manipulation/structures
+https://ts-ast-viewer.com/
 -->
