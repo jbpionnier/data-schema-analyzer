@@ -53,4 +53,17 @@ export function numberValidations({ namespace, schema, validations }: PropertyVa
       }
     })
   }
+
+  if (schema.type === 'integer') {
+    validations.push((input: any) => {
+      if (!Number.isInteger(input)) {
+        return {
+          property: namespace,
+          type: 'INTEGER',
+          description: `property value is not integer`,
+          example: input,
+        }
+      }
+    })
+  }
 }

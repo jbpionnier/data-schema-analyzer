@@ -9,6 +9,10 @@ export type StubType = {
   myNumber?: number
   myBoolean?: boolean
   myObject?: object
+  /**
+   * @integer
+   */
+  myInteger?: number
   myAny?: object
   myNull: null
   /**

@@ -36,6 +36,7 @@ export type PropertyResult = {
     | 'ENUM_VALUES'
     | 'ENUM_UNKNOWN'
     | 'REQUIRED'
+    | 'INTEGER'
     | 'MINIMUM'
     | 'MAXIMUM'
     | 'MIN_LENGTH'

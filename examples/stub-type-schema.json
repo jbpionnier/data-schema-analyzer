@@ -19,6 +19,9 @@
     "myObject": {
       "type": "object"
     },
+    "myInteger": {
+      "type": "integer"
+    },
     "myAny": {
       "type": "object"
     },

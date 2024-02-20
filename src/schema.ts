@@ -1,9 +1,9 @@
 export type TypeName =
   | 'string'
   | 'number'
-  // | 'integer'
-  | 'enum'
+  | 'integer'
   | 'boolean'
+  | 'enum'
   | 'object'
   | 'array'
   | 'null'
@@ -22,7 +22,7 @@ export type StringType = {
   pattern?: string
 }
 export type NumberType = {
-  type: 'number'
+  type: 'number' | 'integer'
   id?: true
   multiple?: true
   minimum?: number

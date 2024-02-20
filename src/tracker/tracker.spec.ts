@@ -126,6 +126,8 @@ describe('Tracker', () => {
         age: { type: 'number', minimum: 0, maximum: 99 },
       })
 
+      expect(track({ age: 10 })).toEqual([])
+
       expect(track({ age: 0 })).toEqual([
         { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: 0 },
       ])
@@ -142,11 +144,24 @@ describe('Tracker', () => {
         age: { type: 'number', exclusiveMinimum: 0, exclusiveMaximum: 99 },
       })
 
+      expect(track({ age: 10 })).toEqual([])
+
       expect(track({ age: -1 })).toEqual([
         { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: -1 },
       ])
       expect(track({ age: 100 })).toEqual([
         { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 100 },
+      ])
+    })
+
+    it('should return integer warning for integer property', () => {
+      const track = createTracker<{ age: number }>({
+        age: { type: 'integer' },
+      })
+      expect(track({ age: 10 })).toEqual([])
+
+      expect(track({ age: 1.2 })).toEqual([
+        { property: 'age', type: 'INTEGER', description: 'property value is not integer', example: 1.2 },
       ])
     })
 

@@ -81,6 +81,9 @@ export function typeValidations({ namespace, schema, validations, reporting }: P
   if (!['enum', 'object'].includes(schema.type)) {
     validations.push((input: any) => {
       const inputType = getInputType(input)
+      if (schema.type === 'integer' && inputType === 'number') {
+        return
+      }
       if (inputType !== schema.type) {
         return {
           property: namespace,
@@ -97,7 +100,8 @@ export function typeValidations({ namespace, schema, validations, reporting }: P
       stringValidations({ namespace, schema, validations, reporting })
       break
     }
-    case 'number': {
+    case 'number':
+    case 'integer': {
       numberValidations({ namespace, schema, validations, reporting })
       break
     }

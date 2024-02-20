@@ -17,6 +17,7 @@ describe('Schema Generator', () => {
         myNumber: { type: 'number' },
         myBoolean: { type: 'boolean' },
         myObject: { type: 'object' },
+        myInteger: { type: 'integer' },
         myNull: { type: 'null' },
         myAny: { type: 'object' },
         myEnumString: { required: true, type: 'enum', values: ['ping', 'pong'], ignoreUnusedValues: true },
