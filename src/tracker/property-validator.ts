@@ -1,5 +1,5 @@
 import { Schema } from '../schema'
-import { Namespace, PropertyResult, Reporters } from './'
+import { Analyze, Namespace, PropertyResult } from './'
 import { AnalyzeId } from './analyze'
 import { notNullValidations, optionalValidations, requiredValidations, singleValueValidations, typeValidations } from './validations/property'
 
@@ -21,32 +21,31 @@ export class PropertyValidator {
     }
   }
 
-  static from({ analyzeId, namespace, schema, reporting }: {
-    analyzeId: AnalyzeId
+  static from({ namespace, schema, analyze }: {
     namespace: Namespace
     schema: Schema & {
       validator?: PropertyValidator
     }
-    reporting: Reporters | undefined
+    analyze: Analyze
   }): PropertyValidator {
-    if (!schema.validator || schema.validator.analyzeId !== analyzeId) {
-      const validations = getPropertyValidation({ namespace, schema, reporting })
-      schema.validator = new PropertyValidator(analyzeId, namespace, validations)
+    if (!schema.validator || schema.validator.analyzeId !== analyze.id) {
+      const validations = getPropertyValidation({ namespace, schema, analyze })
+      schema.validator = new PropertyValidator(analyze.id, namespace, validations)
     }
     return schema.validator
   }
 }
 
-function getPropertyValidation({ namespace, schema, reporting }: {
+function getPropertyValidation({ namespace, schema, analyze }: {
   namespace: Namespace
   schema: Schema
-  reporting: Reporters | undefined
+  analyze: Analyze
 }): PropertyValidation {
   const validations: PropertyValidation = []
-  requiredValidations({ namespace, schema, validations, reporting })
-  optionalValidations({ namespace, schema, validations, reporting })
-  notNullValidations({ namespace, schema, validations, reporting })
-  singleValueValidations({ namespace, schema, validations, reporting })
-  typeValidations({ namespace, schema, validations, reporting })
+  requiredValidations({ namespace, schema, validations, analyze })
+  optionalValidations({ namespace, schema, validations, analyze })
+  notNullValidations({ namespace, schema, validations, analyze })
+  singleValueValidations({ namespace, schema, validations, analyze })
+  typeValidations({ namespace, schema, validations, analyze })
   return validations
 }

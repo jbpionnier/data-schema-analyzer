@@ -20,6 +20,11 @@ export type TrackerOptions = {
   printReporter?: PrintReporter
 }
 
+export type AnalyzeOptions = {
+  inspectValues?: boolean
+  infoValues?: boolean
+}
+
 export type Namespace = `${string}.${string}`
 
 export type PropertyResult = {
@@ -48,12 +53,18 @@ export type PropertyResult = {
   example?: unknown
 }
 
+export type Informer = {
+  property: Namespace
+}
+
 export type Reporters = Array<() => PropertyResult | undefined | void>
+export type Informers = Array<() => Informer>
 
 export type TrackReport = {
   success: boolean
   inputId?: string | number
   properties: PropertyResult[]
+  informations?: Informer[]
 }
 
 export type PrintReporter = (report: TrackReport) => void

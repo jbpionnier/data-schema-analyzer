@@ -1,6 +1,5 @@
 import { ArrayType } from '../../schema'
-import { PropertyResult } from '../'
-import { PropertyValidationParams } from './'
+import { PropertyResult, PropertyValidationParams } from './'
 
 export function arrayValidations({ namespace, schema, validations }: PropertyValidationParams<ArrayType>): void {
   const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }

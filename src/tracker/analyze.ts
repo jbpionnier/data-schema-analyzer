@@ -1,10 +1,10 @@
-import { RootSchema } from '../schema'
-import { Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
+import { RootSchema, Schema } from '../schema'
+import { Informer, Informers, Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
 import { getIdentifierValidator } from './identifier-validator'
 import { ObjectValidator } from './object-validator'
 import { PropertyValidator } from './property-validator'
 
-export type AnalyzeOptions = {
+export type AnalyzeParams = {
   schema: RootSchema
   identifierPropertyName: Namespace | undefined
   printReporter: PrintReporter
@@ -13,16 +13,17 @@ export type AnalyzeOptions = {
 
 export type AnalyzeId = `AnalyzeId:${number}:${number}`
 
-export class Analyze<T extends { [property: string]: any }> {
+export class Analyze<T extends { [property: string]: any } = Schema> {
   readonly id: AnalyzeId
 
-  private readonly schema: RootSchema
-  private readonly printReporter: PrintReporter
+  protected readonly schema: RootSchema
+  protected readonly printReporter: PrintReporter
+
   private readonly filterProperties: (properties: PropertyResult[]) => PropertyResult[]
   private readonly identifierPropertyName?: Namespace
   private readonly identifierValidator?: PropertyValidator
 
-  constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeOptions) {
+  constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeParams) {
     this.id = `AnalyzeId:${Date.now()}:${Math.random()}`
     this.schema = schema
     this.printReporter = printReporter
@@ -54,7 +55,7 @@ export class Analyze<T extends { [property: string]: any }> {
   }
 
   track(input: T | null | undefined): TrackReport {
-    const propertyResults = this.validateInput(input, undefined)
+    const propertyResults = this.validateInput(input)
     return this.createTrackReport(input, propertyResults)
   }
 
@@ -66,34 +67,67 @@ export class Analyze<T extends { [property: string]: any }> {
     return { inputId, success, properties: summaryProperties }
   }
 
-  protected validateInput(input: T | null | undefined, reporting?: Reporters): PropertyResult[] {
+  protected validateInput(input: T | null | undefined): PropertyResult[] {
     const alreadyTracked = this.identifierValidator?.validate(input)
     if (alreadyTracked) {
       return [alreadyTracked]
     }
+
     const validator = ObjectValidator.from({
-      analyzeId: this.id,
-      schema: this.schema,
-      reporting,
       namespace: '' as Namespace,
+      analyze: this,
+      schema: this.schema,
     })
     return validator.validate(input)
   }
 }
 
-export class AnalyzeAndInpect<T extends { [property: string]: any }> extends Analyze<T> {
-  private readonly reporting: Reporters = []
+export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> extends Analyze<T> {
+  readonly infoValues: boolean
 
-  track(input: T | null | undefined): TrackReport {
-    const propertyResults = this.validateInput(input, this.reporting)
-    return this.createTrackReport(input, propertyResults)
+  private readonly reporters: Reporters = []
+  private readonly informers: Informers = []
+
+  private endReport: TrackReport | undefined
+
+  constructor({ infoValues, ...options }: AnalyzeParams & { infoValues?: boolean }) {
+    super(options)
+    this.infoValues = !!infoValues
   }
 
   end(): TrackReport {
-    const properties = this.reporting
+    if (!this.endReport) {
+      this.endReport = this.generateReport()
+    }
+    return this.endReport
+  }
+
+  private generateReport(): TrackReport {
+    const properties = this.reporters
       .map((reporter) => reporter())
       .filter((item): item is PropertyResult => item != null)
 
-    return { success: properties.length === 0, properties }
+    const success = properties.length === 0
+
+    if (!this.infoValues) {
+      return { success, properties }
+    }
+
+    const informations = this.informers
+      .map((informer) => informer())
+
+    return {
+      success,
+      properties,
+      informations,
+    }
+  }
+
+  report(reporter: () => PropertyResult | undefined | void): void {
+    this.reporters.push(reporter)
+  }
+
+  inform(informer: () => Informer): void {
+    this.informers.push(informer)
   }
 }

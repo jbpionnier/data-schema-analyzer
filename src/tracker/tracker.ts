@@ -1,6 +1,6 @@
 import { ObjectType, RootSchema, StringType } from '../schema'
-import { Analyze, AnalyzeAndInpect, AnalyzeOptions } from './analyze'
-import { Namespace, PrintReporter, PropertyResult, TrackerOptions } from './index'
+import { Analyze, AnalyzeAndInpect, AnalyzeParams } from './analyze'
+import { AnalyzeOptions, Namespace, PrintReporter, PropertyResult, TrackerOptions } from './index'
 import { createSimplePrintReporter } from './reporter'
 
 export class Tracker<T extends { [property: string]: any }> {
@@ -19,12 +19,12 @@ export class Tracker<T extends { [property: string]: any }> {
     this.summaryResult = !!summaryResult
   }
 
-  analyze({ inspectValues = true }: { inspectValues?: boolean } = {}): Analyze<T> {
+  analyze({ inspectValues = true, infoValues }: AnalyzeOptions = {}): Analyze<T> {
     const filterProperties = this.summaryResult
       ? filterSummaryResults()
       : (properties: PropertyResult[]) => properties
 
-    const options: AnalyzeOptions = {
+    const options: AnalyzeParams = {
       printReporter: this.printReporter,
       identifierPropertyName: this.identifierPropertyName,
       filterProperties,
@@ -32,7 +32,7 @@ export class Tracker<T extends { [property: string]: any }> {
     }
 
     return inspectValues
-      ? new AnalyzeAndInpect(options)
+      ? new AnalyzeAndInpect({ ...options, infoValues })
       : new Analyze(options)
   }
 }

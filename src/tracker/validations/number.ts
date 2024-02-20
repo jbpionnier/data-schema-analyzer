@@ -1,14 +1,39 @@
 import { NumberType } from '../../schema'
-import { PropertyValidationParams } from './'
+import { AnalyzeAndInpect, PropertyValidationParams } from './'
 
-export function numberValidations({ namespace, schema, validations }: PropertyValidationParams<NumberType>): void {
+const infoKeys: Array<keyof NumberType> = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum']
+
+export function numberValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<NumberType>): void {
+  if (analyze instanceof AnalyzeAndInpect && analyze.infoValues) {
+    const statsValue: { minimum?: number; maximum?: number } = {}
+    validations.push((input: any) => {
+      statsValue.minimum = statsValue.minimum == null || statsValue.minimum > input ? input : statsValue.minimum
+      statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
+    })
+
+    analyze.inform(() => {
+      const infos = infoKeys.reduce<any>((acc, key) => {
+        if (schema[key] != null) {
+          acc[key] = schema[key]
+        }
+        return acc
+      }, {})
+
+      return {
+        property: namespace,
+        stats: statsValue,
+        infos,
+      }
+    })
+  }
+
   if (schema.minimum != null) {
     validations.push((input: any) => {
       if (input <= schema.minimum!) {
         return {
           property: namespace,
           type: 'MINIMUM',
-          description: `property value is too low (${schema.minimum} minimum)`,
+          description: `property value is too low (<= ${schema.minimum})`,
           example: input,
         }
       }
@@ -21,7 +46,7 @@ export function numberValidations({ namespace, schema, validations }: PropertyVa
         return {
           property: namespace,
           type: 'MINIMUM',
-          description: `property value is too low (${schema.exclusiveMinimum} minimum)`,
+          description: `property value is too low (< ${schema.exclusiveMinimum})`,
           example: input,
         }
       }
@@ -34,7 +59,7 @@ export function numberValidations({ namespace, schema, validations }: PropertyVa
         return {
           property: namespace,
           type: 'MAXIMUM',
-          description: `property value is too high (${schema.maximum} maximum)`,
+          description: `property value is too high (>= ${schema.maximum})`,
           example: input,
         }
       }
@@ -47,7 +72,7 @@ export function numberValidations({ namespace, schema, validations }: PropertyVa
         return {
           property: namespace,
           type: 'MAXIMUM',
-          description: `property value is too high (${schema.exclusiveMaximum} maximum)`,
+          description: `property value is too high (> ${schema.exclusiveMaximum})`,
           example: input,
         }
       }

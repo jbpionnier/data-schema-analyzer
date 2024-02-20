@@ -129,10 +129,10 @@ describe('Tracker', () => {
       expect(track({ age: 10 })).toEqual([])
 
       expect(track({ age: 0 })).toEqual([
-        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: 0 },
+        { property: 'age', type: 'MINIMUM', description: 'property value is too low (<= 0)', example: 0 },
       ])
       expect(track({ age: 99 })).toEqual([
-        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 99 },
+        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (>= 99)', example: 99 },
       ])
       expect(track({ age: '35' } as any)).toEqual([
         { property: 'age', type: 'TYPE', description: 'property type is not number', example: '"35"' },
@@ -147,10 +147,10 @@ describe('Tracker', () => {
       expect(track({ age: 10 })).toEqual([])
 
       expect(track({ age: -1 })).toEqual([
-        { property: 'age', type: 'MINIMUM', description: 'property value is too low (0 minimum)', example: -1 },
+        { property: 'age', type: 'MINIMUM', description: 'property value is too low (< 0)', example: -1 },
       ])
       expect(track({ age: 100 })).toEqual([
-        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (99 maximum)', example: 100 },
+        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (> 99)', example: 100 },
       ])
     })
 

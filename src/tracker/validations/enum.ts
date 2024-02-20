@@ -1,11 +1,11 @@
 import { EnumType } from '../../schema'
-import { getInputType, PropertyValidationParams } from './'
+import { AnalyzeAndInpect, getInputType, PropertyValidationParams } from './'
 
-export function enumValidations({ namespace, schema, validations, reporting }: PropertyValidationParams<EnumType>): void {
-  if (!schema.ignoreUnusedValues && reporting) {
+export function enumValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<EnumType>): void {
+  if (!schema.ignoreUnusedValues && analyze instanceof AnalyzeAndInpect) {
     const valuesUsed = new Set<any>()
 
-    reporting.push(() => {
+    analyze.report(() => {
       if (schema.values.some((value) => !valuesUsed.has(value))) {
         return {
           property: namespace,

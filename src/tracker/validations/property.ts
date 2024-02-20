@@ -1,8 +1,7 @@
 import { EnumType, Schema } from '../../schema'
-import { PropertyResult } from '../index'
+import { AnalyzeAndInpect, getInputType, PropertyResult, PropertyValidationParams } from './'
 import { arrayValidations } from './array'
 import { enumValidations } from './enum'
-import { getInputType, PropertyValidationParams } from './index'
 import { numberValidations } from './number'
 import { stringValidations } from './string'
 
@@ -22,15 +21,15 @@ export function requiredValidations({ namespace, schema, validations }: Property
   }
 }
 
-export function optionalValidations({ namespace, schema, validations, reporting }: PropertyValidationParams<Schema>): void {
-  if (!schema.required && !schema.ignoreUnusedProperty && !!namespace && reporting) {
+export function optionalValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
+  if (!schema.required && !schema.ignoreUnusedProperty && !!namespace && analyze instanceof AnalyzeAndInpect) {
     const valuesInfo: { notNull?: boolean; isNull?: boolean } = {}
     validations.push((input: any) => {
       valuesInfo.notNull = valuesInfo.notNull || input != null
       valuesInfo.isNull = valuesInfo.isNull || input == null
     })
 
-    reporting.push(() => {
+    analyze.report(() => {
       if (!valuesInfo.isNull) {
         return {
           property: namespace,
@@ -50,10 +49,10 @@ export function optionalValidations({ namespace, schema, validations, reporting 
   }
 }
 
-export function singleValueValidations({ namespace, schema, validations, reporting }: PropertyValidationParams<Schema>): void {
+export function singleValueValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
   const simpleRequiredType = schema.required
     && !schema.ignoreUnusedProperty
-    && reporting
+    && analyze instanceof AnalyzeAndInpect
     && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
 
   if (simpleRequiredType) {
@@ -64,7 +63,7 @@ export function singleValueValidations({ namespace, schema, validations, reporti
       }
     })
 
-    reporting.push(() => {
+    analyze.report(() => {
       if (valuesUsed.size === 1) {
         return {
           property: namespace,
@@ -77,7 +76,7 @@ export function singleValueValidations({ namespace, schema, validations, reporti
   }
 }
 
-export function typeValidations({ namespace, schema, validations, reporting }: PropertyValidationParams<Schema>): void {
+export function typeValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
   if (!['enum', 'object'].includes(schema.type)) {
     validations.push((input: any) => {
       const inputType = getInputType(input)
@@ -97,20 +96,20 @@ export function typeValidations({ namespace, schema, validations, reporting }: P
 
   switch (schema.type) {
     case 'string': {
-      stringValidations({ namespace, schema, validations, reporting })
+      stringValidations({ namespace, schema, validations, analyze })
       break
     }
     case 'number':
     case 'integer': {
-      numberValidations({ namespace, schema, validations, reporting })
+      numberValidations({ namespace, schema, validations, analyze })
       break
     }
     case 'enum': {
-      enumValidations({ namespace, schema, validations, reporting })
+      enumValidations({ namespace, schema, validations, analyze })
       break
     }
     case 'array': {
-      arrayValidations({ namespace, schema, validations, reporting })
+      arrayValidations({ namespace, schema, validations, analyze })
       break
     }
     default: {

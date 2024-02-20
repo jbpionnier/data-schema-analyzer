@@ -1,6 +1,6 @@
 import { ObjectProperties, Schema } from '../schema'
-import { Namespace, PropertyResult, Reporters } from './'
-import { AnalyzeId } from './analyze'
+import { Namespace, PropertyResult } from './'
+import { Analyze, AnalyzeId } from './analyze'
 import { PropertyValidator } from './property-validator'
 
 export type PropertiesValidation = Array<(input: any) => PropertyResult[] | undefined | void>
@@ -17,37 +17,34 @@ export class ObjectValidator {
       .filter((result) => result.type !== 'OK')
   }
 
-  static from({ analyzeId, namespace, schema, reporting }: {
-    analyzeId: AnalyzeId
+  static from({ namespace, schema, analyze }: {
     namespace: Namespace
-    reporting: Reporters | undefined
     schema: Schema & {
       validator?: ObjectValidator
     }
+    analyze: Analyze<any>
   }): ObjectValidator {
-    if (!schema.validator || schema.validator.analyzeId !== analyzeId) {
-      const validations = getObjectValidations({ analyzeId, namespace, schema, reporting })
-      schema.validator = new ObjectValidator(analyzeId, validations)
+    if (!schema.validator || schema.validator.analyzeId !== analyze.id) {
+      const validations = getObjectValidations({ namespace, schema, analyze })
+      schema.validator = new ObjectValidator(analyze.id, validations)
     }
 
     return schema.validator
   }
 }
 
-function getObjectValidations({ analyzeId, namespace, schema, reporting }: {
-  analyzeId: AnalyzeId
+function getObjectValidations({ namespace, schema, analyze }: {
   namespace: Namespace
   schema: Schema
-  reporting: Reporters | undefined
+  analyze: Analyze
 }): PropertiesValidation {
   const validations: PropertiesValidation = []
 
   if ('properties' in schema) {
     const validators: Array<[string, ObjectValidator]> = getObjectValidators({
       namespace,
-      analyzeId,
       properties: schema.properties,
-      reporting,
+      analyze,
     })
 
     validations.push((input: any): PropertyResult[] => {
@@ -67,7 +64,7 @@ function getObjectValidations({ analyzeId, namespace, schema, reporting }: {
     return validations
   }
 
-  const validator = PropertyValidator.from({ analyzeId, namespace, schema, reporting })
+  const validator = PropertyValidator.from({ namespace, schema, analyze })
   validations.push((input: any): PropertyResult[] => {
     const inputResult = validator.validate(input)
     return inputResult ? [inputResult] : []
@@ -75,10 +72,9 @@ function getObjectValidations({ analyzeId, namespace, schema, reporting }: {
 
   if ('items' in schema) {
     const validator = ObjectValidator.from({
-      analyzeId,
+      analyze,
       namespace,
       schema: schema.required ? { ...schema.items, required: true } : schema.items,
-      reporting,
     })
     validations.push((input: any) => {
       if (Array.isArray(input)) {
@@ -91,21 +87,19 @@ function getObjectValidations({ analyzeId, namespace, schema, reporting }: {
   return validations
 }
 
-function getObjectValidators({ namespace, analyzeId, reporting, properties }: {
+function getObjectValidators({ namespace, properties, analyze }: {
   namespace: Namespace
-  analyzeId: AnalyzeId
+  analyze: Analyze
   properties: ObjectProperties
-  reporting: Reporters | undefined
 }): Array<[string, ObjectValidator]> {
   const propertiesList = Object.keys(properties)
   return propertiesList
     .map((property): [string, ObjectValidator] => {
       const fullNamespace: Namespace = namespace ? `${namespace}.${property}` : property as Namespace
       const validator = ObjectValidator.from({
-        analyzeId,
+        analyze,
         schema: properties[property]!,
         namespace: fullNamespace,
-        reporting,
       })
       return [property, validator]
     })
