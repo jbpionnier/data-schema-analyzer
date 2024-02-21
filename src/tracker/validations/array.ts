@@ -1,15 +1,15 @@
 import { ArrayType } from '../../schema'
-import { PropertyResult, PropertyValidationParams } from './'
+import { Namespace, PropertyResult, PropertyValidationParams } from './'
 
-export function arrayValidations({ namespace, schema, validations }: PropertyValidationParams<ArrayType>): void {
-  const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }
-  validations.push((input: any) => {
+export function arrayValidations({ schema, validations }: PropertyValidationParams<ArrayType, []>): void {
+  const resultOk: PropertyResult = { property: '' as Namespace, description: 'property ok', type: 'OK' }
+  validations.push((_namespace, input) => {
     if (!Array.isArray(input)) {
       return resultOk
     }
   })
   if (schema.minItems != null) {
-    validations.push((input: any[]) => {
+    validations.push((namespace, input) => {
       if (input.length < schema.minItems!) {
         return {
           property: namespace,
@@ -21,7 +21,7 @@ export function arrayValidations({ namespace, schema, validations }: PropertyVal
     })
   }
   if (schema.maxItems != null) {
-    validations.push((input: any[]) => {
+    validations.push((namespace, input: []) => {
       if (input.length > schema.maxItems!) {
         return {
           property: namespace,

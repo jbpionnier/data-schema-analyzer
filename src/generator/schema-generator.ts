@@ -191,6 +191,12 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${JSON.stringify(sche
       tags.pattern = undefined
     }
 
+    if (tags.ignoreUnusedProperty && typeof valueType !== 'string' && valueType.type === 'array' && valueType.items?.type === 'string') {
+      // @ts-expect-error
+      valueType.items.ignoreUnusedProperty = tags.ignoreUnusedProperty
+      tags.ignoreUnusedProperty = undefined
+    }
+
     const hasUndefinedKeyword = valueType === 'null'
       || !!(valueType as EnumType)?.values?.some(({ type, ref }: any) => type === 'object' && ref === 'UndefinedKeyword')
     const isRequired = !node.hasQuestionToken() && !hasUndefinedKeyword

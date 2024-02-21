@@ -2,7 +2,7 @@ import { RootSchema, Schema } from '../schema'
 import { Informer, Informers, Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
 import { AnalyzeReport } from './analyze-report'
 import { getIdentifierValidator } from './identifier-validator'
-import { ObjectValidator } from './object-validator'
+import { getSchemaValidator, ObjectValidator } from './object-validator'
 import { PropertyValidator } from './property-validator'
 
 export type AnalyzeParams = {
@@ -12,10 +12,9 @@ export type AnalyzeParams = {
   filterProperties: (properties: PropertyResult[]) => PropertyResult[]
 }
 
-export type AnalyzeId = `AnalyzeId:${number}:${number}`
-
 export class Analyze<T extends { [property: string]: any } = Schema> {
-  readonly id: AnalyzeId
+  objectValidatorCount = 0
+  propertyValidatorCount = 0
 
   protected readonly schema: RootSchema
   protected readonly printReporter: PrintReporter
@@ -25,10 +24,10 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   private readonly identifierValidator?: PropertyValidator
 
   protected readonly startTime: number
-  #endReport: AnalyzeReport | undefined
+  #endReport?: AnalyzeReport
+  #validator?: ObjectValidator
 
   constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeParams) {
-    this.id = `AnalyzeId:${Date.now()}:${Math.random()}`
     this.startTime = Date.now()
 
     this.schema = schema
@@ -37,7 +36,7 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
 
     this.identifierPropertyName = identifierPropertyName
     this.identifierValidator = identifierPropertyName
-      ? getIdentifierValidator({ analyzeId: this.id, identifierPropertyName, schema })
+      ? getIdentifierValidator({ identifierPropertyName, schema })
       : undefined
   }
 
@@ -85,17 +84,20 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   }
 
   protected validateInput(input: T | null | undefined): PropertyResult[] {
-    const alreadyTracked = this.identifierValidator?.validate(input)
+    const namespace = '' as Namespace
+    const alreadyTracked = this.identifierValidator?.validate(namespace, input)
     if (alreadyTracked) {
       return [alreadyTracked]
     }
 
-    const validator = ObjectValidator.from({
-      namespace: '' as Namespace,
-      analyze: this,
-      schema: this.schema,
-    })
-    return validator.validate(input)
+    if (!this.#validator) {
+      this.#validator = getSchemaValidator({
+        analyze: this,
+        schema: this.schema,
+      })
+    }
+
+    return this.#validator.validate(namespace, input)
   }
 }
 
@@ -122,14 +124,14 @@ export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> ex
   #generateReport(): AnalyzeReport {
     const endTime = Date.now()
 
-    const properties = this.reporters
-      .map((reporter) => reporter())
-      .filter((item): item is PropertyResult => item != null)
-
-    const informations = this.informers
-      .map((informer) => informer())
+    const properties = this.reporters.flatMap((reporter) => reporter())
+    const informations = this.informers.flatMap((informer) => informer())
 
     return new AnalyzeReport({
+      metadata: {
+        objectValidatorCount: this.objectValidatorCount,
+        propertyValidatorCount: this.propertyValidatorCount,
+      },
       startTime: this.startTime,
       endTime,
       properties,
@@ -137,11 +139,11 @@ export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> ex
     })
   }
 
-  report(reporter: () => PropertyResult | undefined | void): void {
+  report(reporter: () => PropertyResult[]): void {
     this.reporters.push(reporter)
   }
 
-  inform(informer: () => Informer): void {
+  inform(informer: () => Informer[]): void {
     this.informers.push(informer)
   }
 }

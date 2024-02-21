@@ -58,8 +58,8 @@ export type Informer = {
   property: Namespace
 }
 
-export type Reporters = Array<() => PropertyResult | undefined | void>
-export type Informers = Array<() => Informer>
+export type Reporters = Array<() => PropertyResult[]>
+export type Informers = Array<() => Informer[]>
 
 export type TrackReport = {
   success: boolean

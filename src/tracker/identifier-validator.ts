@@ -1,12 +1,10 @@
 import { RootSchema } from '../schema'
-import { AnalyzeId } from './analyze'
 import { Namespace, PropertyResult } from './index'
 import { PropertyValidation, PropertyValidator } from './property-validator'
 
-export function getIdentifierValidator({ schema, identifierPropertyName, analyzeId }: {
-  analyzeId: AnalyzeId
-  identifierPropertyName: Namespace
+export function getIdentifierValidator({ schema, identifierPropertyName }: {
   schema: RootSchema
+  identifierPropertyName: Namespace
 }): PropertyValidator {
   const property = schema.properties[identifierPropertyName]
   if (!property?.required) {
@@ -21,7 +19,7 @@ export function getIdentifierValidator({ schema, identifierPropertyName, analyze
   const identifierProperty = { name: identifierPropertyName, ...property }
 
   const validations: PropertyValidation = [
-    (input: any): PropertyResult | undefined => {
+    (_namespace, input): PropertyResult | undefined => {
       const inputId = input?.[identifierPropertyName]
       if (inputId == null || identifierProperty?.multiple) {
         return undefined
@@ -37,5 +35,5 @@ export function getIdentifierValidator({ schema, identifierPropertyName, analyze
     },
   ]
 
-  return new PropertyValidator(analyzeId, identifierPropertyName, validations)
+  return new PropertyValidator(validations)
 }

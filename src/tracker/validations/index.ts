@@ -1,5 +1,4 @@
 import { TypeName } from '../../schema'
-import { Namespace } from '../'
 import { Analyze, AnalyzeAndInpect } from '../analyze'
 import { PropertyValidation } from '../property-validator'
 
@@ -7,10 +6,9 @@ export { Analyze, AnalyzeAndInpect } from '../analyze'
 export { Namespace, PropertyResult } from '../index'
 export { PropertyValidation } from '../property-validator'
 
-export type PropertyValidationParams<T extends { type: TypeName }> = {
-  namespace: Namespace
+export type PropertyValidationParams<T extends { type: TypeName }, V = any> = {
   schema: T
-  validations: PropertyValidation
+  validations: PropertyValidation<V>
   analyze: Analyze | AnalyzeAndInpect
 }
 

@@ -1,9 +1,9 @@
 import { StringType } from '../../schema'
 import { PropertyValidationParams } from './'
 
-export function stringValidations({ namespace, schema, validations }: PropertyValidationParams<StringType>): void {
+export function stringValidations({ schema, validations }: PropertyValidationParams<StringType>): void {
   if (schema.minLength != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       const valueLength = input.toString().length
       if (valueLength < schema.minLength!) {
         return {
@@ -16,7 +16,7 @@ export function stringValidations({ namespace, schema, validations }: PropertyVa
     })
   }
   if (schema.maxLength != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       const valueLength = input.toString().length
       if (valueLength > schema.maxLength!) {
         return {
@@ -30,7 +30,7 @@ export function stringValidations({ namespace, schema, validations }: PropertyVa
   }
   if (schema.pattern && schema.type === 'string') {
     const patternRegExp = new RegExp(schema.pattern)
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (!patternRegExp.test(input)) {
         return {
           property: namespace,

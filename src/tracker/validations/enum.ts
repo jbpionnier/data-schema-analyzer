@@ -1,36 +1,43 @@
 import { EnumType } from '../../schema'
-import { AnalyzeAndInpect, getInputType, PropertyValidationParams } from './'
+import { AnalyzeAndInpect, getInputType, Namespace, PropertyResult, PropertyValidationParams } from './'
 
 const STRING_OR_NUMBER = new Set<string>(['string', 'number'])
 
-export function enumValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<EnumType>): void {
+export function enumValidations({ schema, validations, analyze }: PropertyValidationParams<EnumType, string>): void {
   if (analyze instanceof AnalyzeAndInpect && !schema.ignoreUnusedValues && schema.values?.[0] && STRING_OR_NUMBER.has(typeof schema.values[0])) {
-    const valuesUsed = new Set<any>()
+    const valuesUsedByNamespace = new Map<Namespace, Set<any>>()
 
     analyze.report(() => {
-      if (schema.values.some((value) => !valuesUsed.has(value))) {
-        return {
-          property: namespace,
-          type: 'ENUM_VALUES',
-          description: 'values used',
-          example: Array.from(valuesUsed).sort().join("' | '"),
-        }
-      }
+      return Array.from(valuesUsedByNamespace)
+        .filter(([_namespace, valuesUsed]) => schema.values.some((value) => !valuesUsed.has(value)))
+        .map(([namespace, valuesUsed]): PropertyResult => {
+          return {
+            property: namespace,
+            type: 'ENUM_VALUES',
+            description: 'values used',
+            example: Array.from(valuesUsed).sort().join("' | '"),
+          }
+        })
     })
 
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       const inputType = getInputType(input)
       const isStringOrNumber = STRING_OR_NUMBER.has(inputType)
       if (isStringOrNumber) {
+        let valuesUsed = valuesUsedByNamespace.get(namespace)
+        if (!valuesUsed) {
+          valuesUsed = new Set()
+          valuesUsedByNamespace.set(namespace, valuesUsed)
+        }
         valuesUsed.add(input)
       }
     })
   }
 
-  validations.push((input: any) => {
+  validations.push((namespace, input) => {
     const inputType = getInputType(input)
     const isStringOrNumber = inputType === 'string' || inputType === 'number'
-    if (isStringOrNumber && !schema.values.includes(input as any)) {
+    if (isStringOrNumber && !schema.values.includes(input)) {
       return {
         property: namespace,
         type: 'ENUM_UNKNOWN',

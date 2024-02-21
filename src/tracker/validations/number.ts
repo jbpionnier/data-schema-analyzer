@@ -1,35 +1,50 @@
 import { NumberType } from '../../schema'
-import { AnalyzeAndInpect, PropertyValidationParams } from './'
+import { AnalyzeAndInpect, Namespace, PropertyValidationParams } from './'
 
 const infoKeys: Array<keyof NumberType> = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum']
 
-export function numberValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<NumberType>): void {
+type StatsValue = {
+  count: number
+  minimum?: number
+  maximum?: number
+  type: string
+}
+
+export function numberValidations({ schema, validations, analyze }: PropertyValidationParams<NumberType, number>): void {
   if (analyze instanceof AnalyzeAndInpect && analyze.infoValues) {
-    const statsValue: { count: number; minimum?: number; maximum?: number; type: string } = { count: 0, type: schema.type }
-    validations.push((input: any) => {
+    const infosSchema = infoKeys.reduce<any>((acc, key) => {
+      if (schema[key] != null) {
+        acc[key] = schema[key]
+      }
+      return acc
+    }, {})
+    const statsValueByNamespace = new Map<Namespace, StatsValue>()
+
+    validations.push((namespace, input) => {
+      let statsValue = statsValueByNamespace.get(namespace)
+      if (!statsValue) {
+        statsValue = { count: 0, type: schema.type }
+        statsValueByNamespace.set(namespace, statsValue)
+      }
       statsValue.count++
       statsValue.minimum = statsValue.minimum == null || statsValue.minimum > input ? input : statsValue.minimum
       statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
     })
 
     analyze.inform(() => {
-      const infos = infoKeys.reduce<any>((acc, key) => {
-        if (schema[key] != null) {
-          acc[key] = schema[key]
-        }
-        return acc
-      }, {})
-
-      return {
-        property: namespace,
-        stats: statsValue,
-        infos,
-      }
+      return Array.from(statsValueByNamespace)
+        .map(([namespace, statsValue]) => {
+          return {
+            property: namespace,
+            stats: statsValue,
+            infos: infosSchema,
+          }
+        })
     })
   }
 
   if (schema.type === 'integer') {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (!Number.isInteger(input)) {
         return {
           property: namespace,
@@ -42,7 +57,7 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
   }
 
   if (schema.minimum != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (input < schema.minimum!) {
         return {
           property: namespace,
@@ -55,7 +70,7 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
   }
 
   if (schema.exclusiveMinimum != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (input <= schema.exclusiveMinimum!) {
         return {
           property: namespace,
@@ -68,7 +83,7 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
   }
 
   if (schema.maximum != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (input > schema.maximum!) {
         return {
           property: namespace,
@@ -81,7 +96,7 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
   }
 
   if (schema.exclusiveMaximum != null) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (input >= schema.exclusiveMaximum!) {
         return {
           property: namespace,

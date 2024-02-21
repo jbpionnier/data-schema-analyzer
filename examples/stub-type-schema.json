@@ -59,7 +59,7 @@
           "exclusiveMinimum": 0,
           "maximum": 99,
           "exclusiveMaximum": 100,
-          "type": "number"
+          "type": "integer"
         }
       }
     },

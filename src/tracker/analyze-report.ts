@@ -8,12 +8,14 @@ export class AnalyzeReport {
   readonly success: boolean
   readonly properties: PropertyResult[]
   readonly informations: Informer[]
+  readonly metadata?: object
 
-  constructor({ startTime, endTime, properties = [], informations = [] }: {
+  constructor({ startTime, endTime, properties = [], informations = [], metadata }: {
     startTime: number
     endTime: number
     properties?: PropertyResult[]
     informations?: Informer[]
+    metadata?: object
   }) {
     this.startedAt = new Date(startTime)
     this.endedAt = new Date(endTime)
@@ -22,10 +24,12 @@ export class AnalyzeReport {
     this.success = properties.length === 0
     this.properties = properties
     this.informations = informations
+    this.metadata = metadata
   }
 
   toJSON(): object {
     return {
+      metadata: this.metadata,
       durationTime: this.durationTime,
       startedAt: this.startedAt,
       endedAt: this.endedAt,

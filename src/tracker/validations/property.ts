@@ -1,13 +1,13 @@
 import { EnumType, Schema } from '../../schema'
-import { AnalyzeAndInpect, getInputType, PropertyResult, PropertyValidationParams } from './'
+import { AnalyzeAndInpect, getInputType, Namespace, PropertyResult, PropertyValidationParams } from './'
 import { arrayValidations } from './array'
 import { enumValidations } from './enum'
 import { numberValidations } from './number'
 import { stringValidations } from './string'
 
-export function requiredValidations({ namespace, schema, validations }: PropertyValidationParams<Schema>): void {
+export function requiredValidations({ schema, validations }: PropertyValidationParams<Schema>): void {
   if (schema.required) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       if (input == null) {
         const hasEnumValues = 'items' in schema && 'values' in schema.items && Array.isArray(schema.items?.values)
         return {
@@ -21,64 +21,86 @@ export function requiredValidations({ namespace, schema, validations }: Property
   }
 }
 
-export function optionalValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
-  if (!schema.required && !schema.ignoreUnusedProperty && !!namespace && analyze instanceof AnalyzeAndInpect) {
-    const valuesInfo: { notNull?: boolean; isNull?: boolean } = {}
-    validations.push((input: any) => {
+type ValuesInfo = { notNull?: boolean; isNull?: boolean }
+
+export function optionalValidations({ schema, validations, analyze }: PropertyValidationParams<Schema>): void {
+  if (!schema.required && !schema.ignoreUnusedProperty && analyze instanceof AnalyzeAndInpect) {
+    const valuesInfoByNamespace = new Map<Namespace, ValuesInfo>()
+
+    validations.push((namespace, input) => {
+      let valuesInfo = valuesInfoByNamespace.get(namespace)
+      if (!valuesInfo) {
+        valuesInfo = {}
+        valuesInfoByNamespace.set(namespace, valuesInfo)
+      }
       valuesInfo.notNull = valuesInfo.notNull || input != null
       valuesInfo.isNull = valuesInfo.isNull || input == null
     })
 
     analyze.report(() => {
-      if (!valuesInfo.isNull) {
-        return {
-          property: namespace,
-          type: 'ALWAYS_PRESENT',
-          description: 'optional property always present',
-        }
-      }
+      const valuesInfoByNamespaceList = Array.from(valuesInfoByNamespace)
+      const alwaysPresent = valuesInfoByNamespaceList
+        .filter(([_namespace, valuesInfo]) => !valuesInfo.isNull)
+        .map(([namespace]): PropertyResult => {
+          return {
+            property: namespace,
+            type: 'ALWAYS_PRESENT',
+            description: 'optional property always present',
+          }
+        })
 
-      if (!valuesInfo.notNull) {
-        return {
-          property: namespace,
-          type: 'NEVER_USED',
-          description: 'optional property never used',
-        }
-      }
+      const newUsed = valuesInfoByNamespaceList
+        .filter(([_namespace, valuesInfo]) => !valuesInfo.notNull)
+        .map(([namespace]): PropertyResult => {
+          return {
+            property: namespace,
+            type: 'NEVER_USED',
+            description: 'optional property never used',
+          }
+        })
+
+      return alwaysPresent.concat(newUsed)
     })
   }
 }
 
-export function singleValueValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
+export function singleValueValidations({ schema, validations, analyze }: PropertyValidationParams<Schema>): void {
   const simpleRequiredType = schema.required
     && !schema.ignoreUnusedProperty
     && analyze instanceof AnalyzeAndInpect
     && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
 
   if (simpleRequiredType) {
-    const valuesUsed = new Set<any>()
-    validations.push((input: any) => {
+    const valuesUsedByNamespace = new Map<Namespace, Set<any>>()
+    validations.push((namespace, input) => {
+      let valuesUsed = valuesUsedByNamespace.get(namespace)
+      if (!valuesUsed) {
+        valuesUsed = new Set()
+        valuesUsedByNamespace.set(namespace, valuesUsed)
+      }
       if (valuesUsed.size < 2) {
         valuesUsed.add(input)
       }
     })
 
     analyze.report(() => {
-      if (valuesUsed.size === 1) {
-        return {
-          property: namespace,
-          type: 'SINGLE_VALUE',
-          description: 'property always have the same single value',
-          example: valuesUsed.keys().next().value,
-        }
-      }
+      return Array.from(valuesUsedByNamespace)
+        .filter(([_namespace, valuesUsed]) => valuesUsed.size === 1)
+        .map(([namespace, valuesUsed]): PropertyResult => {
+          return {
+            property: namespace,
+            type: 'SINGLE_VALUE',
+            description: 'property always have the same single value',
+            example: valuesUsed.keys().next().value,
+          }
+        })
     })
   }
 }
 
-export function typeValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<Schema>): void {
+export function typeValidations({ schema, validations, analyze }: PropertyValidationParams<Schema>): void {
   if (!['enum', 'object'].includes(schema.type)) {
-    validations.push((input: any) => {
+    validations.push((namespace, input) => {
       const inputType = getInputType(input)
       if (schema.type === 'integer' && inputType === 'number') {
         return
@@ -96,20 +118,20 @@ export function typeValidations({ namespace, schema, validations, analyze }: Pro
 
   switch (schema.type) {
     case 'string': {
-      stringValidations({ namespace, schema, validations, analyze })
+      stringValidations({ schema, validations, analyze })
       break
     }
     case 'number':
     case 'integer': {
-      numberValidations({ namespace, schema, validations, analyze })
+      numberValidations({ schema, validations, analyze })
       break
     }
     case 'enum': {
-      enumValidations({ namespace, schema, validations, analyze })
+      enumValidations({ schema, validations, analyze })
       break
     }
     case 'array': {
-      arrayValidations({ namespace, schema, validations, analyze })
+      arrayValidations({ schema, validations, analyze })
       break
     }
     default: {
@@ -117,7 +139,7 @@ export function typeValidations({ namespace, schema, validations, analyze }: Pro
         ? `[${schema.map(({ type }) => type).join(' | ')}]`
         : schema.type
       if (!['boolean', 'object'].includes(typeName)) {
-        validations.push((input: any) => {
+        validations.push((namespace, input) => {
           return {
             property: namespace,
             type: 'UNKNOWN_TYPE',
@@ -130,9 +152,9 @@ export function typeValidations({ namespace, schema, validations, analyze }: Pro
   }
 }
 
-export function notNullValidations({ namespace, validations }: PropertyValidationParams<Schema>): void {
-  const resultOk: PropertyResult = { property: namespace, description: 'property ok', type: 'OK' }
-  validations.push((input: any) => {
+export function notNullValidations({ validations }: PropertyValidationParams<Schema>): void {
+  const resultOk: PropertyResult = { property: '' as Namespace, description: '', type: 'OK' }
+  validations.push((_namespace, input) => {
     if (input == null) {
       return resultOk
     }
