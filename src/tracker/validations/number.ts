@@ -5,8 +5,9 @@ const infoKeys: Array<keyof NumberType> = ['minimum', 'exclusiveMinimum', 'maxim
 
 export function numberValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<NumberType>): void {
   if (analyze instanceof AnalyzeAndInpect && analyze.infoValues) {
-    const statsValue: { minimum?: number; maximum?: number } = {}
+    const statsValue: { count: number; minimum?: number; maximum?: number; type: string } = { count: 0, type: schema.type }
     validations.push((input: any) => {
+      statsValue.count++
       statsValue.minimum = statsValue.minimum == null || statsValue.minimum > input ? input : statsValue.minimum
       statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
     })
@@ -27,13 +28,26 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
     })
   }
 
+  if (schema.type === 'integer') {
+    validations.push((input: any) => {
+      if (!Number.isInteger(input)) {
+        return {
+          property: namespace,
+          type: 'INTEGER',
+          description: `property must be a integer`,
+          example: input,
+        }
+      }
+    })
+  }
+
   if (schema.minimum != null) {
     validations.push((input: any) => {
-      if (input <= schema.minimum!) {
+      if (input < schema.minimum!) {
         return {
           property: namespace,
           type: 'MINIMUM',
-          description: `property value is too low (<= ${schema.minimum})`,
+          description: `property must be at least ${schema.minimum}`,
           example: input,
         }
       }
@@ -42,11 +56,11 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
 
   if (schema.exclusiveMinimum != null) {
     validations.push((input: any) => {
-      if (input < schema.exclusiveMinimum!) {
+      if (input <= schema.exclusiveMinimum!) {
         return {
           property: namespace,
           type: 'MINIMUM',
-          description: `property value is too low (< ${schema.exclusiveMinimum})`,
+          description: `property must be at least or equal to ${schema.exclusiveMinimum}`,
           example: input,
         }
       }
@@ -55,11 +69,11 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
 
   if (schema.maximum != null) {
     validations.push((input: any) => {
-      if (input >= schema.maximum!) {
+      if (input > schema.maximum!) {
         return {
           property: namespace,
           type: 'MAXIMUM',
-          description: `property value is too high (>= ${schema.maximum})`,
+          description: `property must not be greater than ${schema.maximum}`,
           example: input,
         }
       }
@@ -68,24 +82,11 @@ export function numberValidations({ namespace, schema, validations, analyze }: P
 
   if (schema.exclusiveMaximum != null) {
     validations.push((input: any) => {
-      if (input > schema.exclusiveMaximum!) {
+      if (input >= schema.exclusiveMaximum!) {
         return {
           property: namespace,
           type: 'MAXIMUM',
-          description: `property value is too high (> ${schema.exclusiveMaximum})`,
-          example: input,
-        }
-      }
-    })
-  }
-
-  if (schema.type === 'integer') {
-    validations.push((input: any) => {
-      if (!Number.isInteger(input)) {
-        return {
-          property: namespace,
-          type: 'INTEGER',
-          description: `property value is not integer`,
+          description: `property must not be greater or equal than ${schema.exclusiveMaximum}`,
           example: input,
         }
       }

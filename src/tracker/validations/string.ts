@@ -9,7 +9,7 @@ export function stringValidations({ namespace, schema, validations }: PropertyVa
         return {
           property: namespace,
           type: 'MIN_LENGTH',
-          description: `property length is too short (${schema.minLength} minimum)`,
+          description: `property must have at least ${schema.minLength} characters`,
           example: `"${input}" (${valueLength})`,
         }
       }
@@ -22,7 +22,7 @@ export function stringValidations({ namespace, schema, validations }: PropertyVa
         return {
           property: namespace,
           type: 'MAX_LENGTH',
-          description: `property length is too long (${schema.maxLength} maximum)`,
+          description: `property must not be greater than ${schema.maxLength} characters`,
           example: `"${input}" (${valueLength})`,
         }
       }

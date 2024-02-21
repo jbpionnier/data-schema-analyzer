@@ -108,10 +108,10 @@ describe('Tracker', () => {
       })
 
       expect(track({ name: 'foo' })).toEqual([
-        { property: 'name', type: 'MIN_LENGTH', description: 'property length is too short (4 minimum)', example: '"foo" (3)' },
+        { property: 'name', type: 'MIN_LENGTH', description: 'property must have at least 4 characters', example: '"foo" (3)' },
       ])
       expect(track({ name: 'Jean Kevin' })).toEqual([
-        { property: 'name', type: 'MAX_LENGTH', description: 'property length is too long (8 maximum)', example: '"Jean Kevin" (10)' },
+        { property: 'name', type: 'MAX_LENGTH', description: 'property must not be greater than 8 characters', example: '"Jean Kevin" (10)' },
       ])
       expect(track({ name: 'foo bar' })).toEqual([
         { property: 'name', type: 'PATTERN', description: 'property format is invalid', example: 'foo bar' },
@@ -126,13 +126,14 @@ describe('Tracker', () => {
         age: { type: 'number', minimum: 0, maximum: 99 },
       })
 
-      expect(track({ age: 10 })).toEqual([])
-
-      expect(track({ age: 0 })).toEqual([
-        { property: 'age', type: 'MINIMUM', description: 'property value is too low (<= 0)', example: 0 },
+      expect(track({ age: -1 })).toEqual([
+        { property: 'age', type: 'MINIMUM', description: 'property must be at least 0', example: -1 },
       ])
-      expect(track({ age: 99 })).toEqual([
-        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (>= 99)', example: 99 },
+      expect(track({ age: 0 })).toEqual([])
+
+      expect(track({ age: 99 })).toEqual([])
+      expect(track({ age: 100 })).toEqual([
+        { property: 'age', type: 'MAXIMUM', description: 'property must not be greater than 99', example: 100 },
       ])
       expect(track({ age: '35' } as any)).toEqual([
         { property: 'age', type: 'TYPE', description: 'property type is not number', example: '"35"' },
@@ -144,13 +145,14 @@ describe('Tracker', () => {
         age: { type: 'number', exclusiveMinimum: 0, exclusiveMaximum: 99 },
       })
 
-      expect(track({ age: 10 })).toEqual([])
-
-      expect(track({ age: -1 })).toEqual([
-        { property: 'age', type: 'MINIMUM', description: 'property value is too low (< 0)', example: -1 },
+      expect(track({ age: 0 })).toEqual([
+        { property: 'age', type: 'MINIMUM', description: 'property must be at least or equal to 0', example: 0 },
       ])
-      expect(track({ age: 100 })).toEqual([
-        { property: 'age', type: 'MAXIMUM', description: 'property value is too high (> 99)', example: 100 },
+      expect(track({ age: 1 })).toEqual([])
+
+      expect(track({ age: 98 })).toEqual([])
+      expect(track({ age: 99 })).toEqual([
+        { property: 'age', type: 'MAXIMUM', description: 'property must not be greater or equal than 99', example: 99 },
       ])
     })
 
@@ -161,7 +163,7 @@ describe('Tracker', () => {
       expect(track({ age: 10 })).toEqual([])
 
       expect(track({ age: 1.2 })).toEqual([
-        { property: 'age', type: 'INTEGER', description: 'property value is not integer', example: 1.2 },
+        { property: 'age', type: 'INTEGER', description: 'property must be a integer', example: 1.2 },
       ])
     })
 
@@ -246,15 +248,13 @@ describe('Tracker', () => {
         .toEqual(successReport)
 
       const result = analyze.end()
-      expect(result)
-        .toEqual({
-          success: false,
-          properties: [{
-            type: 'ALWAYS_PRESENT',
-            property: 'firstName',
-            description: 'optional property always present',
-          }],
-        })
+      expect(result.success).toEqual(false)
+      expect(result.properties)
+        .toEqual([{
+          type: 'ALWAYS_PRESENT',
+          property: 'firstName',
+          description: 'optional property always present',
+        }])
     })
 
     it('should return always present with nested object', async () => {
@@ -278,15 +278,13 @@ describe('Tracker', () => {
         .toEqual(successReport)
 
       const result = analyze.end()
-      expect(result)
-        .toEqual({
-          success: false,
-          properties: [{
-            type: 'ALWAYS_PRESENT',
-            property: 'firstName',
-            description: 'optional property always present',
-          }],
-        })
+      expect(result.success).toEqual(false)
+      expect(result.properties)
+        .toEqual([{
+          type: 'ALWAYS_PRESENT',
+          property: 'firstName',
+          description: 'optional property always present',
+        }])
     })
 
     it('should return never used', () => {
@@ -308,15 +306,13 @@ describe('Tracker', () => {
         .toEqual(successReport)
 
       const result = analyze.end()
-      expect(result)
-        .toEqual({
-          success: false,
-          properties: [{
-            type: 'NEVER_USED',
-            property: 'firstName',
-            description: 'optional property never used',
-          }],
-        })
+      expect(result.success).toBe(false)
+      expect(result.properties)
+        .toEqual([{
+          type: 'NEVER_USED',
+          property: 'firstName',
+          description: 'optional property never used',
+        }])
     })
 
     it('should return single value', () => {
@@ -339,16 +335,14 @@ describe('Tracker', () => {
         .toEqual(successReport)
 
       const result = analyze.end()
-      expect(result)
-        .toEqual({
-          success: false,
-          properties: [{
-            type: 'SINGLE_VALUE',
-            property: 'name',
-            example: 'Kevin',
-            description: 'property always have the same single value',
-          }],
-        })
+      expect(result.success).toBe(false)
+      expect(result.properties)
+        .toEqual([{
+          type: 'SINGLE_VALUE',
+          property: 'name',
+          example: 'Kevin',
+          description: 'property always have the same single value',
+        }])
     })
 
     it('should return enum values used', () => {
@@ -371,21 +365,19 @@ describe('Tracker', () => {
         .toEqual(successReport)
 
       const result = analyze.end()
-      expect(result)
-        .toEqual({
-          success: false,
-          properties: [{
-            type: 'SINGLE_VALUE',
-            property: 'info.gender',
-            description: 'property always have the same single value',
-            example: 'MAN',
-          }, {
-            type: 'ENUM_VALUES',
-            property: 'info.gender',
-            description: 'values used',
-            example: 'MAN',
-          }],
-        })
+      expect(result.success).toBe(false)
+      expect(result.properties)
+        .toEqual([{
+          type: 'SINGLE_VALUE',
+          property: 'info.gender',
+          description: 'property always have the same single value',
+          example: 'MAN',
+        }, {
+          type: 'ENUM_VALUES',
+          property: 'info.gender',
+          description: 'values used',
+          example: 'MAN',
+        }])
     })
   })
 })

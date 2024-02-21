@@ -27,6 +27,7 @@ export type StubType = {
      * @exclusiveMinimum 0
      * @maximum 99
      * @exclusiveMaximum 100
+     * @integer
      */
     age: number
   }

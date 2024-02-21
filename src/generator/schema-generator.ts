@@ -191,11 +191,6 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${JSON.stringify(sche
       tags.pattern = undefined
     }
 
-    if (tags.integer && typeof valueType !== 'string') {
-      valueType.type = 'integer'
-      tags.integer = undefined
-    }
-
     const hasUndefinedKeyword = valueType === 'null'
       || !!(valueType as EnumType)?.values?.some(({ type, ref }: any) => type === 'object' && ref === 'UndefinedKeyword')
     const isRequired = !node.hasQuestionToken() && !hasUndefinedKeyword
@@ -204,6 +199,11 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${JSON.stringify(sche
     if (tags.pattern && typeof valueType !== 'string') {
       valueTypeValid = { ...valueTypeValid, type: 'string' }
     }
+    if (tags.integer && typeof valueType !== 'string') {
+      valueTypeValid.type = 'integer'
+      tags.integer = undefined
+    }
+
     const schema = {
       ...isRequired ? { required: true } : null,
       ...tags,

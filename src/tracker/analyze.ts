@@ -1,5 +1,6 @@
 import { RootSchema, Schema } from '../schema'
 import { Informer, Informers, Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
+import { AnalyzeReport } from './analyze-report'
 import { getIdentifierValidator } from './identifier-validator'
 import { ObjectValidator } from './object-validator'
 import { PropertyValidator } from './property-validator'
@@ -23,8 +24,13 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   private readonly identifierPropertyName?: Namespace
   private readonly identifierValidator?: PropertyValidator
 
+  protected readonly startTime: number
+  #endReport: AnalyzeReport | undefined
+
   constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeParams) {
     this.id = `AnalyzeId:${Date.now()}:${Math.random()}`
+    this.startTime = Date.now()
+
     this.schema = schema
     this.printReporter = printReporter
     this.filterProperties = filterProperties
@@ -40,8 +46,19 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
     this.printReporter(report)
   }
 
-  end(): TrackReport {
-    return { success: true, properties: [] }
+  end(): AnalyzeReport {
+    if (!this.#endReport) {
+      this.#endReport = this.#generateReport()
+    }
+    return this.#endReport
+  }
+
+  #generateReport(): AnalyzeReport {
+    const endTime = Date.now()
+    return new AnalyzeReport({
+      startTime: this.startTime,
+      endTime,
+    })
   }
 
   trackAsync(input: T): Promise<TrackReport> {
@@ -88,39 +105,36 @@ export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> ex
   private readonly reporters: Reporters = []
   private readonly informers: Informers = []
 
-  private endReport: TrackReport | undefined
+  #endReport: AnalyzeReport | undefined
 
   constructor({ infoValues, ...options }: AnalyzeParams & { infoValues?: boolean }) {
     super(options)
     this.infoValues = !!infoValues
   }
 
-  end(): TrackReport {
-    if (!this.endReport) {
-      this.endReport = this.generateReport()
+  end(): AnalyzeReport {
+    if (!this.#endReport) {
+      this.#endReport = this.#generateReport()
     }
-    return this.endReport
+    return this.#endReport
   }
 
-  private generateReport(): TrackReport {
+  #generateReport(): AnalyzeReport {
+    const endTime = Date.now()
+
     const properties = this.reporters
       .map((reporter) => reporter())
       .filter((item): item is PropertyResult => item != null)
 
-    const success = properties.length === 0
-
-    if (!this.infoValues) {
-      return { success, properties }
-    }
-
     const informations = this.informers
       .map((informer) => informer())
 
-    return {
-      success,
+    return new AnalyzeReport({
+      startTime: this.startTime,
+      endTime,
       properties,
       informations,
-    }
+    })
   }
 
   report(reporter: () => PropertyResult | undefined | void): void {
