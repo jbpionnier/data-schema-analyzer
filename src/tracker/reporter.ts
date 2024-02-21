@@ -12,7 +12,7 @@ export function createSimplePrintReporter(logger: (message: string) => void = co
     const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
     summaryProperties
       .map((res) => {
-        const exampleString = res.example ? `: ${res.example}` : ''
+        const exampleString = res.example != null ? `: ${res.example}` : ''
         return `[Tracker]${inputIdString} ${res.property} ${res.description}${exampleString}`
       })
       .forEach((message) => logger(message))

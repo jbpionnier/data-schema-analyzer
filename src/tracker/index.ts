@@ -1,6 +1,7 @@
 import { RootSchema } from '../schema'
 
 export { Analyze } from './analyze'
+export { AnalyzeReport } from './analyze-report'
 export { Tracker } from './tracker'
 
 export type TrackerOptions = {
@@ -64,7 +65,6 @@ export type TrackReport = {
   success: boolean
   inputId?: string | number
   properties: PropertyResult[]
-  informations?: Informer[]
 }
 
 export type PrintReporter = (report: TrackReport) => void

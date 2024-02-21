@@ -1,8 +1,10 @@
 import { EnumType } from '../../schema'
 import { AnalyzeAndInpect, getInputType, PropertyValidationParams } from './'
 
+const STRING_OR_NUMBER = new Set<string>(['string', 'number'])
+
 export function enumValidations({ namespace, schema, validations, analyze }: PropertyValidationParams<EnumType>): void {
-  if (!schema.ignoreUnusedValues && analyze instanceof AnalyzeAndInpect) {
+  if (analyze instanceof AnalyzeAndInpect && !schema.ignoreUnusedValues && schema.values?.[0] && STRING_OR_NUMBER.has(typeof schema.values[0])) {
     const valuesUsed = new Set<any>()
 
     analyze.report(() => {
@@ -18,7 +20,7 @@ export function enumValidations({ namespace, schema, validations, analyze }: Pro
 
     validations.push((input: any) => {
       const inputType = getInputType(input)
-      const isStringOrNumber = inputType === 'string' || inputType === 'number'
+      const isStringOrNumber = STRING_OR_NUMBER.has(inputType)
       if (isStringOrNumber) {
         valuesUsed.add(input)
       }

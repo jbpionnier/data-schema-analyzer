@@ -26,7 +26,7 @@ describe('Schema Generator', () => {
           type: 'object',
           required: true,
           properties: {
-            age: { exclusiveMinimum: 0, minimum: 1, maximum: 99, exclusiveMaximum: 100, required: true, type: 'number' },
+            age: { exclusiveMinimum: 0, minimum: 1, maximum: 99, exclusiveMaximum: 100, required: true, type: 'integer' },
             subProp: { type: 'string' },
           },
         },

@@ -1,5 +1,6 @@
 # data-schema-analyzer
-[![npm version](https://badge.fury.io/js/data-schema-analyzer.svg)](https://badge.fury.io/js/data-schema-analyzer)
+
+[![gh-workflow-image]][gh-workflow-url] [![npm-image]][npm-url] ![][typescript-image]
 
 > [!WARNING]
 > Work in progress.
@@ -89,3 +90,9 @@ TS Morph
 https://ts-morph.com/manipulation/structures
 https://ts-ast-viewer.com/
 -->
+
+[gh-workflow-image]: https://img.shields.io/github/actions/workflow/status/jbpionnier/data-schema-analyzer/ci.yml?style=for-the-badge
+[gh-workflow-url]: https://github.com/jbpionnier/data-schema-analyzer/actions/workflows/ci.yml 'Github action'
+[npm-image]: https://img.shields.io/npm/v/data-schema-analyzer/latest.svg?style=for-the-badge&logo=npm
+[npm-url]: https://www.npmjs.com/package/data-schema-analyzer/v/latest 'npm'
+[typescript-image]: https://img.shields.io/badge/Typescript-294E80.svg?style=for-the-badge&logo=typescript

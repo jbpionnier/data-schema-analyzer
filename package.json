@@ -1,6 +1,6 @@
 {
   "name": "data-schema-analyzer",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Data Schema Analyzer",
   "author": "Jean-Baptiste Pionnier",
   "license": "MIT",
@@ -17,6 +17,9 @@
     "src",
     "!src/benchmarks"
   ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
     "format": "dprint fmt && git status",
     "format:check": "dprint check",
