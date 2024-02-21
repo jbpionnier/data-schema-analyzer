@@ -11,7 +11,8 @@
     "arrowFunction.useParentheses": "force"
   },
   "includes": [
-    "src/**"
+    "src/**",
+    "examples/**"
   ],
   "excludes": [
     "**/node_modules",

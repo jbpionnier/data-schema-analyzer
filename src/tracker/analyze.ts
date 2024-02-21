@@ -1,4 +1,4 @@
-import { RootSchema, Schema } from '../schema'
+import { ObjectType, RootSchema, Schema } from '../schema'
 import { Informer, Informers, Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
 import { AnalyzeReport } from './analyze-report'
 import { getIdentifierValidator } from './identifier-validator'
@@ -6,7 +6,7 @@ import { getSchemaValidator, ObjectValidator } from './object-validator'
 import { PropertyValidator } from './property-validator'
 
 export type AnalyzeParams = {
-  schema: RootSchema
+  rootSchema: RootSchema
   identifierPropertyName: Namespace | undefined
   printReporter: PrintReporter
   filterProperties: (properties: PropertyResult[]) => PropertyResult[]
@@ -16,7 +16,9 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   objectValidatorCount = 0
   propertyValidatorCount = 0
 
-  protected readonly schema: RootSchema
+  protected readonly rootSchema: RootSchema
+  protected readonly mainSchema: ObjectType
+
   protected readonly printReporter: PrintReporter
 
   private readonly filterProperties: (properties: PropertyResult[]) => PropertyResult[]
@@ -27,16 +29,22 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   #endReport?: AnalyzeReport
   #validator?: ObjectValidator
 
-  constructor({ printReporter, filterProperties, schema, identifierPropertyName }: AnalyzeParams) {
+  constructor({ printReporter, filterProperties, rootSchema, identifierPropertyName }: AnalyzeParams) {
     this.startTime = Date.now()
 
-    this.schema = schema
+    this.rootSchema = rootSchema
+    this.mainSchema = rootSchema.definitions?.[rootSchema.$ref] as ObjectType
+
     this.printReporter = printReporter
     this.filterProperties = filterProperties
 
     this.identifierPropertyName = identifierPropertyName
     this.identifierValidator = identifierPropertyName
-      ? getIdentifierValidator({ identifierPropertyName, schema })
+      ? getIdentifierValidator({
+        identifierPropertyName,
+        schema: this.mainSchema,
+        name: this.rootSchema.$ref,
+      })
       : undefined
   }
 
@@ -93,7 +101,8 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
     if (!this.#validator) {
       this.#validator = getSchemaValidator({
         analyze: this,
-        schema: this.schema,
+        schema: this.mainSchema,
+        required: false,
       })
     }
 

@@ -10,11 +10,11 @@ export type TypeName =
 
 export type PrimitiveType = {
   type: 'boolean' | 'object' | 'null'
-  ref?: string
+  $ref?: string
 }
 export type StringType = {
   type: 'string'
-  ref?: string
+  $ref?: string
   id?: true
   multiple?: true
   minLength?: number
@@ -37,19 +37,20 @@ export type EnumType = {
 }
 export type ObjectType = {
   type: 'object'
+  required: string[]
   properties: ObjectProperties
 }
 export type ArrayType = {
   type: 'array'
   minItems?: number
   maxItems?: number
-  items: ValueType
+  items: Schema
 }
 
 export type ValueType = PrimitiveType | StringType | NumberType | EnumType | ObjectType | ArrayType
 
 export type Schema = ValueType & {
-  required?: true
+  ignoreUnusedValues?: true
   ignoreUnusedProperty?: true
 }
 
@@ -57,6 +58,9 @@ export type ObjectProperties = {
   [key: string]: Schema | undefined
 }
 
-export type RootSchema = ObjectType & {
-  name: string
+export type RootSchema = {
+  $ref: string
+  definitions: {
+    [key: string]: ObjectType | EnumType
+  }
 }

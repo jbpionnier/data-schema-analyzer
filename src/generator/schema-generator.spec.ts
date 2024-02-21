@@ -1,5 +1,5 @@
 import { SchemaGenerator } from '../index'
-import { RootSchema } from '../schema'
+import { ObjectType, RootSchema } from '../schema'
 
 describe('Schema Generator', () => {
   it('should generate schema', () => {
@@ -9,69 +9,89 @@ describe('Schema Generator', () => {
       rootInterfaceName: 'StubType',
     })
 
-    const rootSchemaJson: RootSchema = {
-      name: 'StubType',
+    const stubSubTypeSchema: ObjectType = {
       type: 'object',
+      required: ['age', 'shareability'],
       properties: {
-        myString: { minLength: 1, maxLength: 3, pattern: '^\\w+$', id: true, required: true, type: 'string' },
-        myNumber: { type: 'number' },
-        myBoolean: { type: 'boolean' },
-        myObject: { type: 'object' },
-        myInteger: { type: 'integer' },
-        myNull: { type: 'null' },
-        myAny: { type: 'object' },
-        myEnumString: { required: true, type: 'enum', values: ['ping', 'pong'], ignoreUnusedValues: true },
-        myEnumNumber: { required: true, type: 'enum', values: ['1', '2', '3'] },
-        mySubType: {
+        age: { minimum: 1, type: 'number' },
+        shareability: { type: 'enum', values: ['NOTSHARED'] },
+      },
+    }
+
+    const rootSchemaJson: RootSchema = {
+      $ref: 'StubType',
+      definitions: {
+        StubType: {
           type: 'object',
-          required: true,
+          required: [
+            'myString',
+            'myEnumString',
+            'myEnumNumber',
+            'myListString',
+            'myListNumber',
+            'myTupleNumber',
+            'myTupleEmpty',
+            'myListEnumString',
+            'myList',
+            'mySubTypeByRefList',
+          ],
           properties: {
-            age: { exclusiveMinimum: 0, minimum: 1, maximum: 99, exclusiveMaximum: 100, required: true, type: 'integer' },
-            subProp: { type: 'string' },
-          },
-        },
-        myListString: { required: true, type: 'array', items: { type: 'string' } },
-        myListNumber: { minItems: 1, maxItems: 5, required: true, type: 'array', items: { type: 'number' } },
-        myTupleNumber: { required: true, type: 'array', items: { type: 'number' } },
-        myTupleEmpty: { required: true, type: 'array', items: { type: 'object' } },
-        myListObject: { type: 'array', items: { type: 'object' }, ignoreUnusedProperty: true },
-        myListEnumString: { required: true, type: 'array', items: { type: 'enum', values: ['ping', 'pong'] } },
-        myListEnumNumber: { type: 'array', items: { type: 'enum', values: ['1', '2', '3'] } },
-        myList: {
-          required: true,
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              subProp: { minLength: 1, required: true, type: 'string' },
+            myString: { minLength: 1, maxLength: 3, pattern: '^\\w+$', id: true, type: 'string' },
+            myNumber: { type: 'number' },
+            myBoolean: { type: 'boolean' },
+            myObject: { type: 'object' },
+            myInteger: { type: 'integer' },
+            myNull: { type: 'null' },
+            myAny: { type: 'object' },
+            myEnumString: { type: 'enum', values: ['ping', 'pong'], ignoreUnusedValues: true },
+            myEnumNumber: { type: 'enum', values: ['1', '2', '3'] },
+            mySubType: {
+              type: 'object',
+              required: ['age'],
+              properties: {
+                age: { exclusiveMinimum: 0, minimum: 1, maximum: 99, exclusiveMaximum: 100, type: 'integer' },
+                subProp: { type: 'string' },
+              },
             },
-          },
-        },
-        mySubTypeByRef: {
-          type: 'object',
-          properties: {
-            age: { minimum: 1, required: true, type: 'number' },
-            shareability: { required: true, type: 'enum', values: ['NOTSHARED'] },
-          },
-        },
-        mySubTypeByRefList: {
-          required: true,
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              age: { minimum: 1, required: true, type: 'number' },
-              shareability: { required: true, type: 'enum', values: ['NOTSHARED'] },
+            myListString: { type: 'array', items: { type: 'string' } },
+            myListNumber: { minItems: 1, maxItems: 5, type: 'array', items: { type: 'number' } },
+            myTupleNumber: { type: 'array', items: { type: 'number' } },
+            myTupleEmpty: { type: 'array', items: { type: 'object' } },
+            myListObject: { type: 'array', items: { type: 'object' }, ignoreUnusedProperty: true },
+            myListEnumString: { type: 'array', items: { type: 'enum', values: ['ping', 'pong'] } },
+            myListEnumNumber: { type: 'array', items: { type: 'enum', values: ['1', '2', '3'] } },
+            myList: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['subProp'],
+                properties: {
+                  subProp: { minLength: 1, type: 'string' },
+                },
+              },
             },
-          },
-        },
-        combineObject: {
-          type: 'object',
-          required: true,
-          properties: {
-            a: { type: 'string', required: true },
-            b: { type: 'number', required: true },
-            c: { type: 'boolean', required: true },
+            mySubTypeByRef: stubSubTypeSchema,
+            mySubTypeByRefExtra: {
+              type: 'object',
+              required: ['age', 'shareability', 'extra'],
+              properties: {
+                ...stubSubTypeSchema.properties,
+                extra: { type: 'boolean' },
+              },
+            },
+            mySubTypeByRefList: {
+              type: 'array',
+              items: stubSubTypeSchema,
+            },
+            combineObject: {
+              type: 'object',
+              required: ['b', 'a', 'c'],
+              properties: {
+                a: { type: 'string' },
+                b: { type: 'number' },
+                c: { type: 'boolean' },
+              },
+            },
           },
         },
       },

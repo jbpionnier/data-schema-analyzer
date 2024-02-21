@@ -1,4 +1,4 @@
-import { ObjectProperties, Schema } from '../schema'
+import { ObjectProperties, ObjectType, Schema } from '../schema'
 import { Namespace, PropertyResult } from './'
 import { Analyze } from './analyze'
 import { getPropertyValidator } from './property-validator'
@@ -13,28 +13,37 @@ export class ObjectValidator {
   validate(namespace: Namespace, input: any): PropertyResult[] {
     return this.validations
       .flatMap((validation) => validation(namespace, input) || [])
-      .filter((result) => result.type !== 'OK')
+      .filter((result): result is PropertyResult => result && result.type !== 'OK')
   }
 }
 
-export function getSchemaValidator({ schema, analyze }: { schema: Schema; analyze: Analyze<any> }): ObjectValidator {
+export function getSchemaValidator({ analyze, schema, required }: { analyze: Analyze<any>; schema: Schema; required: boolean }): ObjectValidator {
   analyze.objectValidatorCount++
 
   if ('properties' in schema) {
-    return getObjectValidator({ analyze, properties: schema.properties })
+    return getObjectValidator({ analyze, schema })
   }
 
-  const validations: PropertiesValidation = []
-  const validator = getPropertyValidator({ schema, analyze })
-  validations.push((namespace, input): PropertyResult[] => {
-    const inputResult = validator.validate(namespace, input)
-    return inputResult ? [inputResult] : []
-  })
+  // if (schema.type === 'object' && '$ref' in schema && schema.$ref) {
+  //   const currentSchema = analyze.rootSchema.definitions[schema.$ref]
+  //   if (currentSchema) {
+  //     return getSchemaValidator({ schema: currentSchema, analyze })
+  //   }
+  // }
+
+  const validator = getPropertyValidator({ schema, required, analyze })
+  const validations: PropertiesValidation = [
+    (namespace: Namespace, input): PropertyResult[] => {
+      const inputResult = validator.validate(namespace, input)
+      return inputResult ? [inputResult] : []
+    },
+  ]
 
   if ('items' in schema) {
     const validator = getSchemaValidator({
       analyze,
-      schema: schema.required ? { ...schema.items, required: true } : schema.items,
+      schema: schema.items,
+      required,
     })
     validations.push((namespace, input) => {
       if (!Array.isArray(input)) { return [] }
@@ -45,27 +54,38 @@ export function getSchemaValidator({ schema, analyze }: { schema: Schema; analyz
   return new ObjectValidator(validations)
 }
 
-function getObjectValidator({ properties, analyze }: {
+function getObjectValidator({ analyze, schema }: {
   analyze: Analyze
-  properties: ObjectProperties
+  schema: ObjectType
 }): ObjectValidator {
-  const validators = getObjectValidators({ properties, analyze })
+  const validators = getObjectValidators({ schema, analyze })
 
   const validations: PropertiesValidation = [
     (namespace, input): PropertyResult[] => getObjectProperties({ input, namespace, validators }),
-    (namespace, input): PropertyResult[] => getUnknownProperties({ input, namespace, properties }),
+    (namespace, input): PropertyResult[] => getUnknownProperties({ input, namespace, properties: schema.properties }),
   ]
   return new ObjectValidator(validations)
 }
 
-function getObjectValidators({ properties, analyze }: {
+function getObjectValidators({ schema, analyze }: {
   analyze: Analyze
-  properties: ObjectProperties
+  schema: ObjectType
 }): [string, ObjectValidator][] {
+  const { properties, required } = schema
+  const requiredByProperty = (required || [])
+    .reduce<{ [property: string]: true }>((acc, propertyName) => {
+      acc[propertyName] = true
+      return acc
+    }, {})
+
   return Object.keys(properties)
     .map((propertyName): [string, ObjectValidator] => {
-      const schema = properties[propertyName]!
-      const validator = getSchemaValidator({ analyze, schema })
+      const propertySchema = properties[propertyName]!
+      const validator = getSchemaValidator({
+        analyze,
+        schema: propertySchema,
+        required: requiredByProperty[propertyName],
+      })
       return [propertyName, validator]
     })
 }

@@ -1,18 +1,19 @@
-import { RootSchema } from '../schema'
+import { ObjectType } from '../schema'
 import { Namespace, PropertyResult } from './index'
 import { PropertyValidation, PropertyValidator } from './property-validator'
 
-export function getIdentifierValidator({ schema, identifierPropertyName }: {
-  schema: RootSchema
+export function getIdentifierValidator({ schema, identifierPropertyName, name }: {
+  schema: ObjectType
   identifierPropertyName: Namespace
+  name: string
 }): PropertyValidator {
-  const property = schema.properties[identifierPropertyName]
-  if (!property?.required) {
-    throw new Error(`${schema.name}.${identifierPropertyName} property must be required`)
+  const property = schema?.properties?.[identifierPropertyName]
+  if (!property) {
+    throw new Error(`${name}.${identifierPropertyName} property must be required`)
   }
 
   if (property.type !== 'string' && property.type !== 'number') {
-    throw new Error(`${schema.name}.${identifierPropertyName} property must be a string or a number`)
+    throw new Error(`${name}.${identifierPropertyName} property must be a string or a number`)
   }
 
   const trackedIds = new Set<string>()

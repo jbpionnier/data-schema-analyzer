@@ -5,7 +5,16 @@ export function createAnalyze<T extends { [key: string]: any }>(
   options: { summaryResult?: true } = {},
 ): Analyze<T> {
   const tracker = new Tracker<T>({
-    schema: { type: 'object', properties } as any,
+    schema: {
+      $ref: 'SimpleType',
+      definitions: {
+        SimpleType: {
+          type: 'object',
+          required: [],
+          properties,
+        },
+      },
+    },
     ...options,
   })
 

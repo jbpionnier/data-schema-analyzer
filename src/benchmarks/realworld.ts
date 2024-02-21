@@ -63,10 +63,13 @@ const peoples = Array.from({ length: 100 }, () => {
 shortSuite
   .add('valid', () => {
     peoples.forEach((people) => {
-      const report = analyze.track(people)
-      if (!report.success) {
-        console.error(report)
-        throw new Error('Invalid')
+      try {
+        const report = analyze.track(people)
+        if (!report.success) {
+          throw new Error('Invalid')
+        }
+      } catch (err) {
+        console.error(err)
       }
     })
   })

@@ -1,5 +1,6 @@
 import { Schema } from '../schema'
 import { Analyze, Namespace, PropertyResult } from './'
+import { PropertyValidationParams } from './validations'
 import { notNullValidations, optionalValidations, requiredValidations, singleValueValidations, typeValidations } from './validations/property'
 
 export type PropertyValidation<I = any> = Array<(namespace: Namespace, input: I) => PropertyResult | undefined | void>
@@ -19,16 +20,18 @@ export class PropertyValidator {
   }
 }
 
-export function getPropertyValidator({ schema, analyze }: {
-  schema: Schema
+export function getPropertyValidator({ analyze, schema, required }: {
   analyze: Analyze
+  schema: Schema
+  required: boolean
 }): PropertyValidator {
   const validations: PropertyValidation = []
-  requiredValidations({ schema, validations, analyze })
-  optionalValidations({ schema, validations, analyze })
-  notNullValidations({ schema, validations, analyze })
-  singleValueValidations({ schema, validations, analyze })
-  typeValidations({ schema, validations, analyze })
+  const params: PropertyValidationParams<Schema> = { analyze, schema, required, validations }
+  requiredValidations(params)
+  optionalValidations(params)
+  notNullValidations(params)
+  singleValueValidations(params)
+  typeValidations(params)
   analyze.propertyValidatorCount++
   return new PropertyValidator(validations)
 }

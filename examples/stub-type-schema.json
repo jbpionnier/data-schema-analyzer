@@ -1,194 +1,231 @@
 {
-  "name": "StubType",
-  "type": "object",
-  "properties": {
-    "myString": {
-      "required": true,
-      "id": true,
-      "minLength": 1,
-      "maxLength": 3,
-      "pattern": "^\\w+$",
-      "type": "string"
-    },
-    "myNumber": {
-      "type": "number"
-    },
-    "myBoolean": {
-      "type": "boolean"
-    },
-    "myObject": {
-      "type": "object"
-    },
-    "myInteger": {
-      "type": "integer"
-    },
-    "myAny": {
-      "type": "object"
-    },
-    "myNull": {
-      "type": "null"
-    },
-    "myEnumString": {
-      "required": true,
-      "ignoreUnusedValues": true,
-      "type": "enum",
-      "values": [
-        "ping",
-        "pong"
-      ]
-    },
-    "myEnumNumber": {
-      "required": true,
-      "type": "enum",
-      "values": [
-        "1",
-        "2",
-        "3"
-      ]
-    },
-    "mySubType": {
-      "required": true,
+  "$ref": "StubType",
+  "definitions": {
+    "StubType": {
       "type": "object",
+      "required": [
+        "myString",
+        "myEnumString",
+        "myEnumNumber",
+        "myListString",
+        "myListNumber",
+        "myTupleNumber",
+        "myTupleEmpty",
+        "myListEnumString",
+        "myList",
+        "mySubTypeByRefList"
+      ],
       "properties": {
-        "subProp": {
+        "myString": {
+          "id": true,
+          "minLength": 1,
+          "maxLength": 3,
+          "pattern": "^\\w+$",
           "type": "string"
         },
-        "age": {
-          "required": true,
-          "minimum": 1,
-          "exclusiveMinimum": 0,
-          "maximum": 99,
-          "exclusiveMaximum": 100,
-          "type": "integer"
-        }
-      }
-    },
-    "myListString": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "myListNumber": {
-      "required": true,
-      "minItems": 1,
-      "maxItems": 5,
-      "type": "array",
-      "items": {
-        "type": "number"
-      }
-    },
-    "myTupleNumber": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "number"
-      }
-    },
-    "myTupleEmpty": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "myListObject": {
-      "ignoreUnusedProperty": true,
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "myListEnumString": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "enum",
-        "values": [
-          "ping",
-          "pong"
-        ]
-      }
-    },
-    "myListEnumNumber": {
-      "type": "array",
-      "items": {
-        "type": "enum",
-        "values": [
-          "1",
-          "2",
-          "3"
-        ]
-      }
-    },
-    "myList": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "subProp": {
-            "required": true,
-            "minLength": 1,
-            "type": "string"
-          }
-        }
-      }
-    },
-    "mySubTypeByRef": {
-      "type": "object",
-      "properties": {
-        "age": {
-          "required": true,
-          "minimum": 1,
+        "myNumber": {
           "type": "number"
         },
-        "shareability": {
-          "required": true,
+        "myBoolean": {
+          "type": "boolean"
+        },
+        "myObject": {
+          "type": "object"
+        },
+        "myInteger": {
+          "type": "integer"
+        },
+        "myAny": {
+          "type": "object"
+        },
+        "myNull": {
+          "type": "null"
+        },
+        "myEnumString": {
+          "ignoreUnusedValues": true,
           "type": "enum",
           "values": [
-            "NOTSHARED"
+            "ping",
+            "pong"
           ]
-        }
-      }
-    },
-    "mySubTypeByRefList": {
-      "required": true,
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "age": {
-            "required": true,
-            "minimum": 1,
+        },
+        "myEnumNumber": {
+          "type": "enum",
+          "values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "mySubType": {
+          "required": [
+            "age"
+          ],
+          "type": "object",
+          "properties": {
+            "subProp": {
+              "type": "string"
+            },
+            "age": {
+              "minimum": 1,
+              "exclusiveMinimum": 0,
+              "maximum": 99,
+              "exclusiveMaximum": 100,
+              "type": "integer"
+            }
+          }
+        },
+        "myListString": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "myListNumber": {
+          "minItems": 1,
+          "maxItems": 5,
+          "type": "array",
+          "items": {
             "type": "number"
-          },
-          "shareability": {
-            "required": true,
+          }
+        },
+        "myTupleNumber": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "myTupleEmpty": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "myListObject": {
+          "ignoreUnusedProperty": true,
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "myListEnumString": {
+          "type": "array",
+          "items": {
             "type": "enum",
             "values": [
-              "NOTSHARED"
+              "ping",
+              "pong"
             ]
           }
-        }
-      }
-    },
-    "combineObject": {
-      "required": true,
-      "type": "object",
-      "properties": {
-        "a": {
-          "required": true,
-          "type": "string"
         },
-        "b": {
-          "required": true,
-          "type": "number"
+        "myListEnumNumber": {
+          "type": "array",
+          "items": {
+            "type": "enum",
+            "values": [
+              "1",
+              "2",
+              "3"
+            ]
+          }
         },
-        "c": {
-          "required": true,
-          "type": "boolean"
+        "myList": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "subProp"
+            ],
+            "properties": {
+              "subProp": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          }
+        },
+        "mySubTypeByRef": {
+          "type": "object",
+          "required": [
+            "age",
+            "shareability"
+          ],
+          "properties": {
+            "age": {
+              "minimum": 1,
+              "type": "number"
+            },
+            "shareability": {
+              "type": "enum",
+              "values": [
+                "NOTSHARED"
+              ]
+            }
+          }
+        },
+        "mySubTypeByRefExtra": {
+          "type": "object",
+          "properties": {
+            "age": {
+              "minimum": 1,
+              "type": "number"
+            },
+            "shareability": {
+              "type": "enum",
+              "values": [
+                "NOTSHARED"
+              ]
+            },
+            "extra": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "age",
+            "shareability",
+            "extra"
+          ]
+        },
+        "mySubTypeByRefList": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "age",
+              "shareability"
+            ],
+            "properties": {
+              "age": {
+                "minimum": 1,
+                "type": "number"
+              },
+              "shareability": {
+                "type": "enum",
+                "values": [
+                  "NOTSHARED"
+                ]
+              }
+            }
+          }
+        },
+        "combineObject": {
+          "required": [
+            "b",
+            "a",
+            "c"
+          ],
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "number"
+            },
+            "c": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }

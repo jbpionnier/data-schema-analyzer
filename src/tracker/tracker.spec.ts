@@ -30,7 +30,9 @@ describe('Tracker', () => {
   describe('track', () => {
     it('should return required warning for property', () => {
       const track = createTracker<{ name: string }>({
-        name: { type: 'string', required: true },
+        name: { type: 'string' },
+      }, {
+        required: ['name'],
       })
 
       expect(track({} as any)).toEqual([
@@ -39,7 +41,9 @@ describe('Tracker', () => {
     })
     it('should return required and unknown warning for property', () => {
       const track = createTracker<{ name: string }>({
-        name: { type: 'string', required: true },
+        name: { type: 'string' },
+      }, {
+        required: ['name'],
       })
 
       expect(track({ other: true } as any)).toEqual([
@@ -51,10 +55,15 @@ describe('Tracker', () => {
     it('should return required and unknown warning for nested property', () => {
       const track = createTracker<{ list: { tag: string }[] }>({
         list: {
-          required: true,
           type: 'array',
-          items: { type: 'object', properties: { tag: { type: 'string', required: true } } },
+          items: {
+            type: 'object',
+            required: ['tag'],
+            properties: { tag: { type: 'string' } },
+          },
         },
+      }, {
+        required: ['list'],
       })
 
       expect(track({ list: [{ tags: 'foo' }] } as any)).toEqual([
@@ -65,7 +74,9 @@ describe('Tracker', () => {
 
     it('should return no warning without id property', () => {
       const track = createTracker<{ id: number }>({
-        id: { type: 'number', required: true },
+        id: { type: 'number' },
+      }, {
+        required: ['id'],
       })
 
       expect(track({ id: 1 })).toEqual([])
@@ -74,8 +85,11 @@ describe('Tracker', () => {
 
     it('should return already tracked warning with id property summary', () => {
       const track = createTracker<{ id: number }>({
-        id: { type: 'number', id: true, required: true },
-      }, { summaryResult: true })
+        id: { type: 'number', id: true },
+      }, {
+        summaryResult: true,
+        required: ['id'],
+      })
 
       expect(track({ id: 1 })).toEqual([])
       expect(track({ id: 2 })).toEqual([])
@@ -88,7 +102,9 @@ describe('Tracker', () => {
     })
     it('should return already tracked warning with id property', () => {
       const track = createTracker<{ id: number }>({
-        id: { type: 'number', id: true, required: true },
+        id: { type: 'number', id: true },
+      }, {
+        required: ['id'],
       })
 
       expect(track({ id: 1 })).toEqual([])
@@ -194,7 +210,11 @@ describe('Tracker', () => {
     })
 
     it('should return not required warning for nested object in array property', () => {
-      const nestedSchema: ObjectType = { type: 'object', properties: { id: { type: 'number', required: true } } }
+      const nestedSchema: ObjectType = {
+        type: 'object',
+        required: ['id'],
+        properties: { id: { type: 'number' } },
+      }
       const track = createTracker<{ list: Array<{ id: number }> }>({
         list: { type: 'array', items: nestedSchema },
       })
@@ -384,11 +404,20 @@ describe('Tracker', () => {
 
 function createTracker<T extends { [key: string]: any }>(
   properties: { [property: string]: Schema },
-  options: { summaryResult?: true } = {},
+  options: { summaryResult?: true; required?: string[] } = {},
 ): (input: T) => PropertyResult[] {
   const tracker = new Tracker<T>({
-    schema: { type: 'object', properties } as any,
-    ...options,
+    schema: {
+      $ref: 'SimpleType',
+      definitions: {
+        SimpleType: {
+          type: 'object',
+          required: options.required || [],
+          properties,
+        },
+      },
+    },
+    summaryResult: options.summaryResult,
   })
 
   const analyze = tracker.analyze()

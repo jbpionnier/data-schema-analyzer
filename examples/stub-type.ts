@@ -52,6 +52,7 @@ export type StubType = {
     subProp: string
   }>
   mySubTypeByRef?: StubSubType
+  mySubTypeByRefExtra?: StubSubType & { extra: boolean }
   mySubTypeByRefList: StubSubType[]
   combineObject: { a?: string; b: number } & { a: string; c: boolean }
 }
