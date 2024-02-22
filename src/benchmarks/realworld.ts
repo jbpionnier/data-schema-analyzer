@@ -5,8 +5,8 @@ import { createAnalyze } from './shared'
 const shortSuite = new Benchmark.Suite('realworld')
 
 const analyze = createAnalyze({
-  type: { type: 'enum', values: ['person'] },
-  hair: { type: 'enum', values: ['blue', 'brown'] },
+  type: { type: 'string', enum: ['person'] },
+  hair: { type: 'string', enum: ['blue', 'brown'] },
   active: { type: 'boolean' },
   name: { type: 'string' },
   age: { type: 'number', minimum: 0, maximum: 2000 },

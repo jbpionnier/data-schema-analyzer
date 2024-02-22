@@ -3,7 +3,6 @@ export type TypeName =
   | 'number'
   | 'integer'
   | 'boolean'
-  | 'enum'
   | 'object'
   | 'array'
   | 'null'
@@ -31,9 +30,9 @@ export type NumberType = {
   exclusiveMaximum?: number
 }
 export type EnumType = {
-  type: 'enum'
+  type: 'string'
   ignoreUnusedValues?: true
-  values: Array<string | number | ObjectType>
+  enum: Array<string | number | ObjectType>
 }
 export type ObjectType = {
   type: 'object'

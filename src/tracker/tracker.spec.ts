@@ -185,7 +185,7 @@ describe('Tracker', () => {
 
     it('should return unknown value warning for enum property', () => {
       const track = createTracker<{ gender: 'MAN' | 'WOMAN' }>({
-        gender: { type: 'enum', values: ['MAN', 'WOMAN'] },
+        gender: { type: 'string', enum: ['MAN', 'WOMAN'] },
       })
 
       expect(track({ gender: 'OTHER' } as any)).toEqual([

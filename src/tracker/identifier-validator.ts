@@ -1,4 +1,4 @@
-import { ObjectType } from '../schema'
+import { ObjectType, StringType } from '../schema'
 import { Namespace, PropertyResult } from './index'
 import { PropertyValidation, PropertyValidator } from './property-validator'
 
@@ -7,7 +7,7 @@ export function getIdentifierValidator({ schema, identifierPropertyName, name }:
   identifierPropertyName: Namespace
   name: string
 }): PropertyValidator {
-  const property = schema?.properties?.[identifierPropertyName]
+  const property = schema?.properties?.[identifierPropertyName] as StringType
   if (!property) {
     throw new Error(`${name}.${identifierPropertyName} property must be required`)
   }

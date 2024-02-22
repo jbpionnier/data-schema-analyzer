@@ -14,7 +14,7 @@ describe('Schema Generator', () => {
       required: ['age', 'shareability'],
       properties: {
         age: { minimum: 1, type: 'number' },
-        shareability: { type: 'enum', values: ['NOTSHARED'] },
+        shareability: { type: 'string', enum: ['NOTSHARED'] },
       },
     }
 
@@ -43,8 +43,8 @@ describe('Schema Generator', () => {
             myInteger: { type: 'integer' },
             myNull: { type: 'null' },
             myAny: { type: 'object' },
-            myEnumString: { type: 'enum', values: ['ping', 'pong'], ignoreUnusedValues: true },
-            myEnumNumber: { type: 'enum', values: ['1', '2', '3'] },
+            myEnumString: { type: 'string', enum: ['ping', 'pong'], ignoreUnusedValues: true },
+            myEnumNumber: { type: 'string', enum: ['1', '2', '3'] },
             mySubType: {
               type: 'object',
               required: ['age'],
@@ -58,8 +58,8 @@ describe('Schema Generator', () => {
             myTupleNumber: { type: 'array', items: { type: 'number' } },
             myTupleEmpty: { type: 'array', items: { type: 'object' } },
             myListObject: { type: 'array', items: { type: 'object' }, ignoreUnusedProperty: true },
-            myListEnumString: { type: 'array', items: { type: 'enum', values: ['ping', 'pong'] } },
-            myListEnumNumber: { type: 'array', items: { type: 'enum', values: ['1', '2', '3'] } },
+            myListEnumString: { type: 'array', items: { type: 'string', enum: ['ping', 'pong'] } },
+            myListEnumNumber: { type: 'array', items: { type: 'string', enum: ['1', '2', '3'] } },
             myList: {
               type: 'array',
               items: {

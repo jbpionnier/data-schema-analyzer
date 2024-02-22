@@ -43,15 +43,15 @@
         },
         "myEnumString": {
           "ignoreUnusedValues": true,
-          "type": "enum",
-          "values": [
+          "type": "string",
+          "enum": [
             "ping",
             "pong"
           ]
         },
         "myEnumNumber": {
-          "type": "enum",
-          "values": [
+          "type": "string",
+          "enum": [
             "1",
             "2",
             "3"
@@ -111,8 +111,8 @@
         "myListEnumString": {
           "type": "array",
           "items": {
-            "type": "enum",
-            "values": [
+            "type": "string",
+            "enum": [
               "ping",
               "pong"
             ]
@@ -121,8 +121,8 @@
         "myListEnumNumber": {
           "type": "array",
           "items": {
-            "type": "enum",
-            "values": [
+            "type": "string",
+            "enum": [
               "1",
               "2",
               "3"
@@ -156,8 +156,8 @@
               "type": "number"
             },
             "shareability": {
-              "type": "enum",
-              "values": [
+              "type": "string",
+              "enum": [
                 "NOTSHARED"
               ]
             }
@@ -171,8 +171,8 @@
               "type": "number"
             },
             "shareability": {
-              "type": "enum",
-              "values": [
+              "type": "string",
+              "enum": [
                 "NOTSHARED"
               ]
             },
@@ -200,8 +200,8 @@
                 "type": "number"
               },
               "shareability": {
-                "type": "enum",
-                "values": [
+                "type": "string",
+                "enum": [
                   "NOTSHARED"
                 ]
               }

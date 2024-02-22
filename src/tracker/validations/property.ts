@@ -14,7 +14,7 @@ export function requiredValidations({ schema, validations, required }: PropertyV
           property: namespace,
           type: 'REQUIRED',
           description: 'required property is missing',
-          example: hasEnumValues ? `[${(schema.items as EnumType)?.values?.join(' | ')}]` : `[${schema.type}]`,
+          example: hasEnumValues ? `[${(schema.items as EnumType)?.enum?.join(' | ')}]` : `[${schema.type}]`,
         }
       }
     })
@@ -119,15 +119,14 @@ export function typeValidations({ schema, required, validations, analyze }: Prop
   switch (schema.type) {
     case 'string': {
       stringValidations({ schema, required, validations, analyze })
+      if ('enum' in schema) {
+        enumValidations({ schema, required, validations, analyze })
+      }
       break
     }
     case 'number':
     case 'integer': {
       numberValidations({ schema, required, validations, analyze })
-      break
-    }
-    case 'enum': {
-      enumValidations({ schema, required, validations, analyze })
       break
     }
     case 'array': {

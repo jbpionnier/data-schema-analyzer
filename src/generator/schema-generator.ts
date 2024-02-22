@@ -82,8 +82,8 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${shemaString}`
       }
       case ts.SyntaxKind.UnionType: {
         const type: EnumType = {
-          type: 'enum',
-          values: (node as UnionTypeNode).getTypeNodes()
+          type: 'string',
+          enum: (node as UnionTypeNode).getTypeNodes()
             .map((node) => this.getValueType(node, sourceFiles, propertyName) as string)
             .sort(),
         }
@@ -222,9 +222,9 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${shemaString}`
     // }
 
     const hasUndefinedKeyword = valueType === 'null'
-      || !!(valueType as EnumType)?.values?.some(({ type, $ref }: any) => type === 'object' && $ref === 'UndefinedKeyword')
+      || !!(valueType as EnumType)?.enum?.some(({ $ref }: any) => $ref === 'UndefinedKeyword')
     const isRequired = !node.hasQuestionToken() && !hasUndefinedKeyword
-    let valueTypeValid: ValueType = hasUndefinedKeyword && (valueType as any)?.values?.[0] || valueType
+    let valueTypeValid: ValueType = (hasUndefinedKeyword && (valueType as EnumType)?.enum?.[0] || valueType) as ValueType
 
     if (tags.pattern && typeof valueType !== 'string') {
       valueTypeValid = { ...valueTypeValid, type: 'string' }
@@ -234,19 +234,19 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${shemaString}`
       tags.integer = undefined
     }
 
-    const schema = {
+    const schema: Schema = {
       ...isRequired ? { required: true } : null,
       ...tags,
       ...(typeof valueTypeValid === 'string' && valueType !== 'null')
         ? {
-          type: 'enum',
-          values: [valueTypeValid],
+          type: 'string',
+          enum: [valueTypeValid],
         }
         : { type: 'null' },
       ...(typeof valueTypeValid !== 'string')
         ? valueTypeValid
         : undefined,
-    } as Schema
+    }
     return schema
   }
 
