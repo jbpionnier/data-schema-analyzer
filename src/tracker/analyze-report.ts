@@ -23,7 +23,12 @@ export class AnalyzeReport {
 
     this.success = properties.length === 0
     this.properties = properties
-    this.informations = informations
+    this.informations = informations.map(({ infos, ...other }) => {
+      return {
+        ...other,
+        ...Object.keys(infos || {}).length > 0 ? { infos } : {},
+      }
+    })
     this.metadata = metadata
   }
 

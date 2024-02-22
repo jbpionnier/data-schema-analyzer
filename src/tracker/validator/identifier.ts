@@ -1,12 +1,12 @@
-import { ObjectType, StringType } from '../schema'
-import { Namespace, PropertyResult } from './index'
-import { PropertyValidation, PropertyValidator } from './property-validator'
+import { ObjectType, StringType } from '../../schema'
+import { Namespace, PropertyResult } from '../index'
+import { PropertiesValidation, Validator } from './validator'
 
 export function getIdentifierValidator({ schema, identifierPropertyName, name }: {
   schema: ObjectType
   identifierPropertyName: Namespace
   name: string
-}): PropertyValidator {
+}): Validator {
   const property = schema?.properties?.[identifierPropertyName] as StringType
   if (!property) {
     throw new Error(`${name}.${identifierPropertyName} property must be required`)
@@ -19,8 +19,8 @@ export function getIdentifierValidator({ schema, identifierPropertyName, name }:
   const trackedIds = new Set<string>()
   const identifierProperty = { name: identifierPropertyName, ...property }
 
-  const validations: PropertyValidation = [
-    (_namespace, input): PropertyResult | undefined => {
+  const validations: PropertiesValidation = [
+    (_namespace: Namespace, input: any): PropertyResult | undefined => {
       const inputId = input?.[identifierPropertyName]
       if (inputId == null || identifierProperty?.multiple) {
         return undefined
@@ -36,5 +36,5 @@ export function getIdentifierValidator({ schema, identifierPropertyName, name }:
     },
   ]
 
-  return new PropertyValidator(validations)
+  return new Validator(validations, { abortEarly: true })
 }
