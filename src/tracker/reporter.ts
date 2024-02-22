@@ -1,18 +1,17 @@
-import { Namespace, PrintReporter, TrackReport } from './index'
+import { Logger, Namespace, PrintReporter, TrackReport } from './index'
 
-export function createSimplePrintReporter(logger: (message: string) => void = console.log): PrintReporter {
-  return (report: TrackReport): void => {
+export function createSimplePrintReporter(logger: Logger = console.log): PrintReporter {
+  return async (report: TrackReport): Promise<void> => {
     const summaryProperties = report.properties
       .sort(sortPropertiesByLevel())
       .slice(0, 20)
-
     const inputIdString = report.inputId != null ? ` ${report.inputId}` : ''
-    summaryProperties
-      .map((res) => {
-        const exampleString = res.example != null ? `: ${res.example}` : ''
-        return `[Tracker]${inputIdString} ${res.property} ${res.description}${exampleString}`
-      })
-      .forEach((message) => logger(message))
+
+    await Promise.all(summaryProperties.map((res) => {
+      const exampleString = res.example != null ? `: ${res.example}` : ''
+      const message = `[Tracker]${inputIdString} ${res.property} ${res.description}${exampleString}`
+      return logger(message)
+    }))
   }
 }
 

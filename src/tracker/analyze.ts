@@ -51,9 +51,9 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   /**
    * End Analyze and print the report
    */
-  endAndPrint(): void {
+  async endAndPrint(): Promise<void> {
     const report = this.end()
-    this.printReporter(report)
+    await this.printReporter(report)
   }
 
   /**
