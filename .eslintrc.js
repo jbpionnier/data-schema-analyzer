@@ -25,7 +25,7 @@ module.exports = {
     'func-names': 'error',
     'require-await': 'error',
 
-    // @depreacted
+    // @deprecated
     'no-extra-semi': 'off',
     'comma-dangle': 'off',
     'operator-linebreak': 'off',

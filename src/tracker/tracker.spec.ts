@@ -387,6 +387,7 @@ describe('Tracker', () => {
 
       const result = analyze.end()
       expect(result.success).toBe(false)
+      expect(result.metadata?.total).toEqual(2)
       expect(result.properties)
         .toEqual([{
           type: 'SINGLE_VALUE',

@@ -28,6 +28,7 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   protected readonly startTime: number
   #endReport?: AnalyzeReport
   #validator?: Validator
+  #trackCount = 0
 
   constructor({ printReporter, filterProperties, rootSchema, identifierPropertyName }: AnalyzeParams) {
     this.startTime = Date.now()
@@ -51,9 +52,9 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
   /**
    * End Analyze and print the report
    */
-  endAndPrint(): void {
+  async endAndPrint(): Promise<void> {
     const report = this.end()
-    this.printReporter(report)
+    await this.printReporter(report)
   }
 
   /**
@@ -78,7 +79,7 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
    * Track the data
    * @param input
    */
-  trackAsync(input: T): Promise<TrackReport> {
+  trackAsync(input: T | null | undefined): Promise<TrackReport> {
     const result = this.track(input)
     return Promise.resolve(result)
   }
@@ -87,7 +88,7 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
    * Track the data and print the report
    * @param input
    */
-  trackAndPrint(input: T): void {
+  trackAndPrint(input: T | null | undefined): void {
     const report = this.track(input)
     this.printReporter(report)
   }
@@ -97,8 +98,13 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
    * @param input
    */
   track(input: T | null | undefined): TrackReport {
+    this.#trackCount++
     const propertyResults = this.validateInput(input as T)
     return this.createTrackReport(input as T, propertyResults)
+  }
+
+  get trackCount(): number {
+    return this.#trackCount
   }
 
   protected createTrackReport(input: T | undefined, propertyResults: PropertyResult[]): TrackReport {
@@ -156,8 +162,10 @@ export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> ex
 
     return new AnalyzeReport({
       metadata: {
+        total: this.trackCount,
         objectValidatorCount: this.objectValidatorCount,
         propertyValidatorCount: this.propertyValidatorCount,
+        informations: informations.length,
       },
       startTime: this.startTime,
       endTime,

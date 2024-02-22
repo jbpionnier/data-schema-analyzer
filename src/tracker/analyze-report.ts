@@ -26,7 +26,7 @@ export class AnalyzeReport {
    * Informations about the properties
    */
   readonly informations: Informer[]
-  readonly metadata?: object
+  readonly metadata?: any
 
   constructor({ startTime, endTime, properties = [], informations = [], metadata }: {
     startTime: number

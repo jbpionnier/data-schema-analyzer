@@ -17,7 +17,7 @@ export type TrackerOptions = {
    * A function to log messages
    * @param message
    */
-  logger?: (message: string) => void
+  logger?: Logger
   printReporter?: PrintReporter
 }
 
@@ -72,4 +72,5 @@ export type TrackReport = {
   properties: PropertyResult[]
 }
 
-export type PrintReporter = (report: TrackReport) => void
+export type PrintReporter = (report: TrackReport) => void | Promise<void>
+export type Logger = (message: string) => void | Promise<void>
