@@ -1,9 +1,9 @@
 import { ObjectType, RootSchema, Schema } from '../schema'
 import { Informer, Informers, Namespace, PrintReporter, PropertyResult, Reporters, TrackReport } from './'
 import { AnalyzeReport } from './analyze-report'
-import { getIdentifierValidator } from './identifier-validator'
-import { getSchemaValidator, ObjectValidator } from './object-validator'
-import { PropertyValidator } from './property-validator'
+import { getIdentifierValidator } from './validator/identifier'
+import { getSchemaValidator } from './validator/schema'
+import { Validator } from './validator/validator'
 
 export type AnalyzeParams = {
   rootSchema: RootSchema
@@ -23,11 +23,11 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
 
   private readonly filterProperties: (properties: PropertyResult[]) => PropertyResult[]
   private readonly identifierPropertyName?: Namespace
-  private readonly identifierValidator?: PropertyValidator
+  private readonly identifierValidator?: Validator
 
   protected readonly startTime: number
   #endReport?: AnalyzeReport
-  #validator?: ObjectValidator
+  #validator?: Validator
 
   constructor({ printReporter, filterProperties, rootSchema, identifierPropertyName }: AnalyzeParams) {
     this.startTime = Date.now()
@@ -48,11 +48,17 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
       : undefined
   }
 
+  /**
+   * End Analyze and print the report
+   */
   endAndPrint(): void {
     const report = this.end()
     this.printReporter(report)
   }
 
+  /**
+   * End Analyze
+   */
   end(): AnalyzeReport {
     if (!this.#endReport) {
       this.#endReport = this.#generateReport()
@@ -68,22 +74,34 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
     })
   }
 
+  /**
+   * Track the data
+   * @param input
+   */
   trackAsync(input: T): Promise<TrackReport> {
     const result = this.track(input)
     return Promise.resolve(result)
   }
 
+  /**
+   * Track the data and print the report
+   * @param input
+   */
   trackAndPrint(input: T): void {
     const report = this.track(input)
     this.printReporter(report)
   }
 
+  /**
+   * Track the data
+   * @param input
+   */
   track(input: T | null | undefined): TrackReport {
-    const propertyResults = this.validateInput(input)
-    return this.createTrackReport(input, propertyResults)
+    const propertyResults = this.validateInput(input as T)
+    return this.createTrackReport(input as T, propertyResults)
   }
 
-  protected createTrackReport(input: T | null | undefined, propertyResults: PropertyResult[]): TrackReport {
+  protected createTrackReport(input: T | undefined, propertyResults: PropertyResult[]): TrackReport {
     const inputId = this.identifierPropertyName ? input?.[this.identifierPropertyName] : undefined
     const summaryProperties = this.filterProperties(propertyResults)
     const success = summaryProperties.length === 0
@@ -91,11 +109,11 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
     return { inputId, success, properties: summaryProperties }
   }
 
-  protected validateInput(input: T | null | undefined): PropertyResult[] {
+  protected validateInput(input: T | undefined): PropertyResult[] {
     const namespace = '' as Namespace
-    const alreadyTracked = this.identifierValidator?.validate(namespace, input)
-    if (alreadyTracked) {
-      return [alreadyTracked]
+    const alreadyTracked = this.identifierValidator?.validate(namespace, input) || []
+    if (alreadyTracked.length) {
+      return alreadyTracked
     }
 
     if (!this.#validator) {

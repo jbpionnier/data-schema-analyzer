@@ -1,7 +1,8 @@
 import { SchemaGenerator, Tracker } from '../'
 import { ObjectType, Schema } from '../schema'
-import { PropertyResult, TrackReport } from './'
+import { Namespace, PropertyResult, TrackReport } from './'
 import { Analyze } from './analyze'
+import { sortPropertiesByLevel } from './reporter'
 
 type SimpleType = {
   /**
@@ -244,7 +245,7 @@ describe('Tracker', () => {
     })
 
     beforeEach(() => {
-      analyze = tracker.analyze()
+      analyze = tracker.analyze({ infoValues: true })
     })
 
     it('should return always present', async () => {
@@ -365,7 +366,7 @@ describe('Tracker', () => {
         }])
     })
 
-    it('should return enum values used', () => {
+    it('should return enum values used and info value', () => {
       expect(analyze
         .track({
           name: 'Jean',
@@ -398,6 +399,75 @@ describe('Tracker', () => {
           description: 'values used',
           example: 'MAN',
         }])
+
+      expect(result.informations).toEqual([
+        {
+          property: 'age',
+          type: 'number',
+          stats: { count: 1, minimum: 35, maximum: 35 },
+          infos: { minimum: 1, maximum: 99 },
+        },
+        {
+          property: 'firstName',
+          type: 'string',
+          stats: { count: 1, notEmpty: 1, length: 5 },
+          infos: { pattern: '^\\w+$' },
+        },
+        {
+          property: 'list',
+          type: 'array',
+          stats: { count: 2, empty: 2, items: 0 },
+        },
+        {
+          property: 'name',
+          type: 'string',
+          stats: { count: 2, minLength: 4, maxLength: 5 },
+          infos: { minLength: 1, maxLength: 5 },
+        },
+        {
+          property: 'info.gender',
+          type: 'string',
+          stats: {
+            count: 2,
+            enum: {
+              MAN: 2,
+            },
+          },
+        },
+      ])
+    })
+  })
+
+  describe('sortPropertiesByLevel', () => {
+    it('should return properties sorted by level', () => {
+      const properties: Array<{ property: Namespace }> = [
+        { property: 'a.b.c.d' },
+        { property: 'b.a.c' },
+        { property: 'a.b.c' },
+        { property: 'b.d' },
+        { property: 'c.m' },
+        { property: 'c.z' },
+        { property: 'c.b.d' },
+        { property: 'a.x' },
+        { property: 'a' },
+        { property: 'b' },
+        { property: 'c' },
+      ] as Array<{ property: Namespace }>
+
+      const propertiesSorted = [...properties].sort(sortPropertiesByLevel())
+      expect(propertiesSorted).toEqual([
+        { property: 'a' },
+        { property: 'b' },
+        { property: 'c' },
+        { property: 'a.x' },
+        { property: 'b.d' },
+        { property: 'c.m' },
+        { property: 'c.z' },
+        { property: 'a.b.c' },
+        { property: 'b.a.c' },
+        { property: 'c.b.d' },
+        { property: 'a.b.c.d' },
+      ])
     })
   })
 })

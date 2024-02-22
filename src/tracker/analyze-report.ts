@@ -1,12 +1,30 @@
 import { Informer, PropertyResult } from './index'
+import { sortPropertiesByLevel } from './reporter'
 
 export class AnalyzeReport {
+  /**
+   * Analyze start time
+   */
   readonly startedAt: Date
+  /**
+   * Analyze end time
+   */
   readonly endedAt: Date
+  /**
+   * Duration time in milliseconds
+   */
   readonly durationTime: number
-
+  /**
+   * If all properties are OK
+   */
   readonly success: boolean
+  /**
+   * Properties result
+   */
   readonly properties: PropertyResult[]
+  /**
+   * Informations about the properties
+   */
   readonly informations: Informer[]
   readonly metadata?: object
 
@@ -24,6 +42,13 @@ export class AnalyzeReport {
     this.success = properties.length === 0
     this.properties = properties
     this.informations = informations
+      .map(({ infos, ...other }) => {
+        return {
+          ...other,
+          ...Object.keys(infos || {}).length > 0 ? { infos } : {},
+        }
+      })
+      .sort(sortPropertiesByLevel())
     this.metadata = metadata
   }
 

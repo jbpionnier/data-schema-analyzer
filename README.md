@@ -83,6 +83,8 @@ https://github.com/xiag-ag/typescript-to-json-schema
 https://github.com/timqian/gql-generator
 
 # Generator AST to JSON
+https://github.com/YousefED/typescript-json-schema
+https://github.com/vega/ts-json-schema-generator
 https://github.com/PengJiyuan/ts-document/blob/main/src/generate.ts
 https://github.com/max-team/typescript-to-json-schema/blob/master/src/util.ts
 

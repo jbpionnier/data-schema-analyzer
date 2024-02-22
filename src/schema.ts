@@ -7,9 +7,17 @@ export type TypeName =
   | 'array'
   | 'null'
 
-export type PrimitiveType = {
-  type: 'boolean' | 'object' | 'null'
+export type CommonType = {
+  ignoreUnusedValues?: true
+  ignoreUnusedProperty?: true
+}
+
+export type AnyType = {
+  type: 'null' | 'object'
   $ref?: string
+}
+export type BooleanType = {
+  type: 'boolean'
 }
 export type StringType = {
   type: 'string'
@@ -43,18 +51,16 @@ export type ArrayType = {
   type: 'array'
   minItems?: number
   maxItems?: number
-  items: Schema
+  items: ItemsType & CommonType
 }
+export type ItemsType = StringType | BooleanType | NumberType | EnumType | ObjectType | AnyType
 
-export type ValueType = PrimitiveType | StringType | NumberType | EnumType | ObjectType | ArrayType
+export type ValueType = StringType | BooleanType | NumberType | EnumType | ObjectType | ArrayType | AnyType
 
-export type Schema = ValueType & {
-  ignoreUnusedValues?: true
-  ignoreUnusedProperty?: true
-}
+export type Schema = ValueType & CommonType
 
 export type ObjectProperties = {
-  [key: string]: Schema | undefined
+  [key: string]: Schema
 }
 
 export type RootSchema = {

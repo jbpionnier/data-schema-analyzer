@@ -10,6 +10,13 @@ export class Tracker<T extends { [property: string]: any }> {
   private readonly printReporter: PrintReporter
   private readonly summaryResult: boolean
 
+  /**
+   * Create a new Tracker
+   * @param schema Root Schema
+   * @param summaryResult If true, the tracker will return only one report by property
+   * @param logger A function to log messages
+   * @param printReporter A function to print the report
+   */
   constructor({ schema, summaryResult, printReporter, logger }: TrackerOptions) {
     if (!schema) {
       throw new Error('schema is required')
@@ -25,6 +32,10 @@ export class Tracker<T extends { [property: string]: any }> {
     this.summaryResult = !!summaryResult
   }
 
+  /**
+   * Start Analyze
+   * @param options
+   */
   analyze({ inspectValues = true, infoValues }: AnalyzeOptions = {}): Analyze<T> {
     const filterProperties = this.summaryResult
       ? filterSummaryResults()

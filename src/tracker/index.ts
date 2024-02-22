@@ -1,4 +1,4 @@
-import { RootSchema } from '../schema'
+import { RootSchema, Schema, TypeName } from '../schema'
 
 export { Analyze } from './analyze'
 export { AnalyzeReport } from './analyze-report'
@@ -56,6 +56,11 @@ export type PropertyResult = {
 
 export type Informer = {
   property: Namespace
+  type: TypeName
+  stats: {
+    count: number
+  }
+  infos?: Partial<Schema>
 }
 
 export type Reporters = Array<() => PropertyResult[]>
