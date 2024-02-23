@@ -4,50 +4,42 @@
     "StubType": {
       "type": "object",
       "required": [
-        "myString",
-        "myEnumString",
         "myEnumNumber",
-        "myListString",
-        "myListNumber",
-        "myTupleNumber",
-        "myTupleEmpty",
-        "myListEnumString",
+        "myEnumString",
         "myList",
-        "mySubTypeByRefList"
+        "myListEnumString",
+        "myListNumber",
+        "myListString",
+        "myString",
+        "mySubTypeByRefList",
+        "myTupleEmpty",
+        "myTupleNumber"
       ],
       "properties": {
-        "myString": {
-          "id": true,
-          "minLength": 1,
-          "maxLength": 3,
-          "pattern": "^\\w+$",
-          "type": "string"
-        },
-        "myNumber": {
-          "type": "number"
-        },
-        "myBoolean": {
-          "type": "boolean"
-        },
-        "myObject": {
-          "type": "object"
-        },
-        "myInteger": {
-          "type": "integer"
+        "combineObject": {
+          "required": [
+            "b",
+            "a",
+            "c"
+          ],
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "number"
+            },
+            "c": {
+              "type": "boolean"
+            }
+          }
         },
         "myAny": {
           "type": "object"
         },
-        "myNull": {
-          "type": "null"
-        },
-        "myEnumString": {
-          "ignoreUnusedValues": true,
-          "type": "string",
-          "enum": [
-            "ping",
-            "pong"
-          ]
+        "myBoolean": {
+          "type": "boolean"
         },
         "myEnumNumber": {
           "type": "string",
@@ -57,77 +49,16 @@
             "3"
           ]
         },
-        "mySubType": {
-          "required": [
-            "age"
-          ],
-          "type": "object",
-          "properties": {
-            "subProp": {
-              "type": "string"
-            },
-            "age": {
-              "minimum": 1,
-              "exclusiveMinimum": 0,
-              "maximum": 99,
-              "exclusiveMaximum": 100,
-              "type": "integer"
-            }
-          }
+        "myEnumString": {
+          "ignoreUnusedValues": true,
+          "type": "string",
+          "enum": [
+            "ping",
+            "pong"
+          ]
         },
-        "myListString": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "myListNumber": {
-          "minItems": 1,
-          "maxItems": 5,
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        },
-        "myTupleNumber": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        },
-        "myTupleEmpty": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "myListObject": {
-          "ignoreUnusedProperty": true,
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "myListEnumString": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "ping",
-              "pong"
-            ]
-          }
-        },
-        "myListEnumNumber": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "1",
-              "2",
-              "3"
-            ]
-          }
+        "myInteger": {
+          "type": "integer"
         },
         "myList": {
           "type": "array",
@@ -141,6 +72,82 @@
                 "minLength": 1,
                 "type": "string"
               }
+            }
+          }
+        },
+        "myListEnumNumber": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2",
+              "3"
+            ]
+          }
+        },
+        "myListEnumString": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ping",
+              "pong"
+            ]
+          }
+        },
+        "myListNumber": {
+          "minItems": 1,
+          "maxItems": 5,
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "myListObject": {
+          "ignoreUnusedProperty": true,
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "myListString": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "myNull": {
+          "type": "null"
+        },
+        "myNumber": {
+          "type": "number"
+        },
+        "myObject": {
+          "type": "object"
+        },
+        "myString": {
+          "id": true,
+          "minLength": 1,
+          "maxLength": 3,
+          "pattern": "^\\w+$",
+          "type": "string"
+        },
+        "mySubType": {
+          "required": [
+            "age"
+          ],
+          "type": "object",
+          "properties": {
+            "age": {
+              "minimum": 1,
+              "exclusiveMinimum": 0,
+              "maximum": 99,
+              "exclusiveMaximum": 100,
+              "type": "integer"
+            },
+            "subProp": {
+              "type": "string"
             }
           }
         },
@@ -208,23 +215,16 @@
             }
           }
         },
-        "combineObject": {
-          "required": [
-            "b",
-            "a",
-            "c"
-          ],
-          "type": "object",
-          "properties": {
-            "a": {
-              "type": "string"
-            },
-            "b": {
-              "type": "number"
-            },
-            "c": {
-              "type": "boolean"
-            }
+        "myTupleEmpty": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "myTupleNumber": {
+          "type": "array",
+          "items": {
+            "type": "number"
           }
         }
       }

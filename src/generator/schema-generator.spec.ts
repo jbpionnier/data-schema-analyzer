@@ -24,16 +24,16 @@ describe('Schema Generator', () => {
         StubType: {
           type: 'object',
           required: [
-            'myString',
-            'myEnumString',
             'myEnumNumber',
-            'myListString',
-            'myListNumber',
-            'myTupleNumber',
-            'myTupleEmpty',
-            'myListEnumString',
+            'myEnumString',
             'myList',
+            'myListEnumString',
+            'myListNumber',
+            'myListString',
+            'myString',
             'mySubTypeByRefList',
+            'myTupleEmpty',
+            'myTupleNumber',
           ],
           properties: {
             myString: { minLength: 1, maxLength: 3, pattern: '^\\w+$', id: true, type: 'string' },

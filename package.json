@@ -32,9 +32,11 @@
     "coverage": "jest --maxWorkers=4 --coverage",
     "prepublishOnly": "npm run test && npm run build",
     "play": "tsx examples/generate-schema.ts && dprint fmt",
+    "generate": "npx typescript-json-schema  --topRef --refs ./examples/stub-type.ts StubType --out ./examples/stub-type-schema2.json",
     "benchmark": "tsx src/benchmarks"
   },
   "dependencies": {
+    "@types/json-schema": "^7.0.15",
     "ts-morph": "^21.0.1"
   },
   "devDependencies": {
@@ -45,7 +47,7 @@
     "@typescript-eslint/parser": "^7.0.2",
     "benchmark": "^2.1.4",
     "dprint": "^0.45.0",
-    "eslint": "~8.56.0",
+    "eslint": "~8.57.0",
     "eslint-plugin-jest": "^27.9.0",
     "jest": "^29.7.0",
     "rimraf": "^5.0.5",

@@ -1,11 +1,7 @@
-export type TypeName =
-  | 'string'
-  | 'number'
-  | 'integer'
-  | 'boolean'
-  | 'object'
-  | 'array'
-  | 'null'
+import { JSONSchema7Type, JSONSchema7TypeName } from 'json-schema'
+
+export type TypeName = JSONSchema7TypeName
+export type JsonType = JSONSchema7Type
 
 export type CommonType = {
   ignoreUnusedValues?: true

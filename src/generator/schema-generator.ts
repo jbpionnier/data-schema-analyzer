@@ -186,6 +186,7 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${schemaString}`
 
   private getObjectType(node: InterfaceDeclaration | TypeLiteralNode, sourceFiles: SourceFiles): ObjectType {
     return node.getProperties()
+      .sort((propertyA, propertyB) => propertyA.getName().localeCompare(propertyB.getName()))
       .reduce<ObjectType>((prev, property) => {
         const name = property.getName()
         const schema = this.getTypeNodeSchema(property, sourceFiles) as Schema & { required: boolean }
@@ -215,11 +216,10 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${schemaString}`
       tags.pattern = undefined
     }
 
-    // if (tags.ignoreUnusedProperty && typeof valueType !== 'string' && valueType.type === 'array' && valueType.items?.type === 'string') {
-    //   // @ts-expect-error
-    //   valueType.items.ignoreUnusedProperty = tags.ignoreUnusedProperty
-    //   tags.ignoreUnusedProperty = undefined
-    // }
+    if (tags.ignoreUnusedProperty && typeof valueType !== 'string' && valueType.type === 'array' && valueType.items?.type === 'string') {
+      valueType.items.ignoreUnusedProperty = tags.ignoreUnusedProperty
+      tags.ignoreUnusedProperty = undefined
+    }
 
     const hasUndefinedKeyword = valueType === 'null'
       || !!(valueType as EnumType)?.enum?.some(({ $ref }: any) => $ref === 'UndefinedKeyword')

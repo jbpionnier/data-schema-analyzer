@@ -34,7 +34,8 @@ export class Tracker<T extends { [property: string]: any }> {
 
   /**
    * Start Analyze
-   * @param options
+   * @param inspectValues If true, the tracker will return a detailed report (default: true)
+   * @param infoValues If true, the tracker will return the value of each property
    */
   analyze({ inspectValues = true, infoValues }: AnalyzeOptions = {}): Analyze<T> {
     const filterProperties = this.summaryResult
@@ -51,6 +52,18 @@ export class Tracker<T extends { [property: string]: any }> {
     return inspectValues
       ? new AnalyzeAndInpect({ ...options, infoValues })
       : new Analyze(options)
+  }
+
+  /**
+   * Create a new Tracker
+   * @param schema Root Schema
+   * @param summaryResult If true, the tracker will return only one report by property
+   * @param logger A function to log messages
+   * @param printReporter A function to print the report
+   * @returns Tracker
+   */
+  static create<T extends { [property: string]: any }>(options: TrackerOptions): Tracker<T> {
+    return new Tracker<T>(options)
   }
 }
 
