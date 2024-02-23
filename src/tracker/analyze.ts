@@ -103,6 +103,9 @@ export class Analyze<T extends { [property: string]: any } = Schema> {
     return this.createTrackReport(input as T, propertyResults)
   }
 
+  /**
+   * Get the number of tracks
+   */
   get trackCount(): number {
     return this.#trackCount
   }
@@ -174,10 +177,18 @@ export class AnalyzeAndInpect<T extends { [property: string]: any } = Schema> ex
     })
   }
 
+  /**
+   * Add a reporter
+   * @param reporter
+   */
   report(reporter: () => PropertyResult[]): void {
     this.reporters.push(reporter)
   }
 
+  /**
+   * Add an informer
+   * @param informer
+   */
   inform(informer: () => Informer[]): void {
     this.informers.push(informer)
   }

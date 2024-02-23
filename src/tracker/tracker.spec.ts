@@ -477,7 +477,7 @@ function createTracker<T extends { [key: string]: any }>(
   properties: { [property: string]: Schema },
   options: { summaryResult?: true; required?: string[] } = {},
 ): (input: T) => PropertyResult[] {
-  const tracker = new Tracker<T>({
+  const tracker = Tracker.create<T>({
     schema: {
       $ref: 'SimpleType',
       definitions: {

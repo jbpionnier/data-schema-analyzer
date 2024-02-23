@@ -1,7 +1,9 @@
+import * as pkgInfo from '../../package.json'
 import { Informer, PropertyResult } from './index'
 import { sortPropertiesByLevel } from './reporter'
 
 export class AnalyzeReport {
+  readonly version = pkgInfo.version
   /**
    * Analyze start time
    */
@@ -49,7 +51,10 @@ export class AnalyzeReport {
         }
       })
       .sort(sortPropertiesByLevel())
-    this.metadata = metadata
+    this.metadata = {
+      version: this.version,
+      ...metadata || {},
+    }
   }
 
   toJSON(): object {

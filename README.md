@@ -3,64 +3,103 @@
 [![gh-workflow-image]][gh-workflow-url] [![npm-image]][npm-url] ![][typescript-image]
 
 > [!WARNING]
-> Work in progress.
+> This package is primarily published to receive early feedback and for contributors, during this development phase we cannot guarantee the stability of the APIs, consider each release to contain breaking changes.
 
 ## :package: Installation
 
 To install the module from npm:
 
-```
+```bash
 npm install data-schema-analyzer
 ```
 
 ## :blue_book: Usage
 
+### Generate Schema
+
 ```typescript
-import { SchemaGenerator } from 'data-schema-analyzer'
+// ./examples/stub-type.ts
 
-const tracker = new Tracker<StubType>({
-  schema: require('./examples/stub-type-schema.json'),
-  logger: (message) => {
-    // your logger
-    console.log(message)
-  },
-})
-
-const analyze = tracker.analyze()
-
-//...
-analyze.track({ id: 1, name: 'John Doe', age: 'Not a number' })
-analyze.track({ id: 2, name: 'Kevin', age: -5 })
-// ...
-
-analyze.endAndPrint()
-
-// Prints
-// [TYPE] age property type is not number: "Not a number"
-// [MINIMUM] age property value is too low (1 minimum): -5
+export type StubType = {
+  id: number
+  name: string
+  /**
+   * @minimum 0
+   */
+  age: number
+}
 ```
+You can use annotations to add more information to the schema :
+- `@minimum` : Add a minimum value to the number
+- `@maximum` : Add a maximum value to the number
+- `@pattern` : Add a RegEx to the string
+- `@id` : Add a unique identifier to the object
+- `@minLength` : Add a minimum length to the string
+- `@maxLength` : Add a maximum length to the string
+- `@minItems` : Add a minimum number of items to the array
+- `@maxItems` : Add a maximum number of items to the array
 
 
-### To Generate Schema
+Use the `SchemaGenerator` to generate the schema from the typescript file.
 
 ```typescript
 // ./scripts/generate-schema.ts
-
 import { SchemaGenerator } from 'data-schema-analyzer'
 
 const generator = new SchemaGenerator({
   tsConfigFilePath: './tsconfig.json',
 })
-
-const stubTypeSchema = generator.generate({
+const schema = generator.generateFile({
   sourceFiles: ['./examples/stub-type.ts'],
   rootInterfaceName: 'StubType',
+  outputFilePath: './examples/stub-type-schema.json', // Typescript interface or JSON File
 })
 ```
 
+### Track the data
+```typescript
+import { Tracker } from 'data-schema-analyzer'
+import { StubType } from './examples/stub-type'
+
+const tracker = new Tracker<StubType>({
+  schema,
+})
+
+const analyze = tracker.analyze()
+
+//...
+const report = analyze.track({ id: 1, name: 'John Doe', age: 'Not a number' })
+// {
+//   "properties": [
+//     {
+//       "type": "TYPE",
+//       "property": "age"
+//       "message": "age property type is not number",
+//       "example": "Not a number"
+//     },
+//   ]
+// }
+
+// ...
+const report = analyze.track({ id: 2, name: 'Kevin', age: -5 })
+// {
+//   "properties": [
+//     {
+//       "type": "TYPE",
+//       "property": "age"
+//       "message": "age property must be at least 0",
+//       "example": -1
+//     },
+//   ]
+// }
+
+const analyzeReport = analyze.end()
+// Other information from the data like the number of records, the number of errors, etc.
+```
+
+And add the script to your `package.json`:
 ```
 // package.json
-
  "scripts": {
   ...
   "generate:schema": "npx tsx ./scripts/generate-schema.ts"
@@ -74,6 +113,7 @@ const stubTypeSchema = generator.generate({
 <!--
 Getting started
 Ressources
+https://github.com/Effect-TS/effect/tree/main/packages/schema
 https://github.com/PengJiyuan/ts-document
 https://github.com/xdoer/json-types-generator
 https://github.com/idurar/fast-graphql
