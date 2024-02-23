@@ -1,4 +1,5 @@
 import { RootSchema, Schema, TypeName } from '../schema'
+import { StatsArrayValue, StatsEnumValue, StatsNumberValue, StatsStringValue } from './validator/validations'
 
 export { Analyze } from './analyze'
 export { AnalyzeReport } from './analyze-report'
@@ -57,9 +58,7 @@ export type PropertyResult = {
 export type Informer = {
   property: Namespace
   type: TypeName
-  stats: {
-    count: number
-  }
+  stats: StatsStringValue | StatsNumberValue | StatsArrayValue | StatsEnumValue
   infos?: Partial<Schema>
 }
 

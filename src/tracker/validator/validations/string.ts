@@ -1,4 +1,4 @@
-import { AnalyzeAndInpect, Informer, Namespace, PropertyValidationParams, StringType } from './index'
+import { AnalyzeAndInpect, Informer, Namespace, PropertyInformationParams, PropertyValidationParams, StatsStringValue, StringType } from './index'
 
 export function stringValidations({ schema, validator }: PropertyValidationParams<StringType>): void {
   if (schema.minLength != null) {
@@ -44,15 +44,7 @@ export function stringValidations({ schema, validator }: PropertyValidationParam
 
 const infoKeys: Array<keyof StringType> = ['minLength', 'maxLength', 'pattern']
 
-type StatsValue = {
-  count: number
-  empty: number
-  notEmpty: number
-  minLength?: number
-  maxLength?: number
-}
-
-export function stringInformations({ schema, validator, analyze, required }: PropertyValidationParams<StringType, string>): void {
+export function stringInformations({ schema, validator, analyze, required }: PropertyInformationParams<StringType, string>): void {
   if (analyze instanceof AnalyzeAndInpect && analyze.infoValues) {
     const infosSchema = infoKeys.reduce<any>((acc, key) => {
       if (schema[key] != null) {
@@ -60,7 +52,7 @@ export function stringInformations({ schema, validator, analyze, required }: Pro
       }
       return acc
     }, {})
-    const statsValueByNamespace = new Map<Namespace, StatsValue>()
+    const statsValueByNamespace = new Map<Namespace, StatsStringValue>()
 
     validator.add((namespace, input) => {
       let statsValue = statsValueByNamespace.get(namespace)
@@ -80,7 +72,7 @@ export function stringInformations({ schema, validator, analyze, required }: Pro
 
     analyze.inform((): Informer[] => {
       return Array.from(statsValueByNamespace)
-        .map(([namespace, { count, empty, notEmpty, minLength, maxLength }]: [Namespace, StatsValue]) => {
+        .map(([namespace, { count, empty, notEmpty, minLength, maxLength }]: [Namespace, StatsStringValue]): Informer => {
           const statsValueFormatted = {
             count,
             ...(empty > 0 ? { empty } : {}),

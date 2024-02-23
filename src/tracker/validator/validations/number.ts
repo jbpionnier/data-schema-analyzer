@@ -1,4 +1,4 @@
-import { AnalyzeAndInpect, Informer, Namespace, NumberType, PropertyValidationParams } from './index'
+import { Informer, Namespace, NumberType, PropertyInformationParams, PropertyValidationParams, StatsNumberValue } from './index'
 
 export function numberValidations({ schema, validator }: PropertyValidationParams<NumberType, number>): void {
   if (schema.type === 'integer') {
@@ -69,43 +69,39 @@ export function numberValidations({ schema, validator }: PropertyValidationParam
 
 const infoKeys: Array<keyof NumberType> = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum']
 
-type StatsValue = {
-  count: number
-  minimum?: number
-  maximum?: number
-}
-
-export function numberInformations({ schema, validator, analyze }: PropertyValidationParams<NumberType, number>): void {
-  if (analyze instanceof AnalyzeAndInpect && analyze.infoValues) {
-    const infosSchema = infoKeys.reduce<any>((acc, key) => {
-      if (schema[key] != null) {
-        acc[key] = schema[key]
-      }
-      return acc
-    }, {})
-    const statsValueByNamespace = new Map<Namespace, StatsValue>()
-
-    validator.add((namespace, input) => {
-      let statsValue = statsValueByNamespace.get(namespace)
-      if (!statsValue) {
-        statsValue = { count: 0 }
-        statsValueByNamespace.set(namespace, statsValue)
-      }
-      statsValue.count++
-      statsValue.minimum = statsValue.minimum == null || statsValue.minimum > input ? input : statsValue.minimum
-      statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
-    })
-
-    analyze.inform((): Informer[] => {
-      return Array.from(statsValueByNamespace)
-        .map(([namespace, statsValue]) => {
-          return {
-            property: namespace,
-            type: schema.type,
-            stats: statsValue,
-            infos: infosSchema,
-          }
-        })
-    })
+export function numberInformations({ schema, validator, analyze }: PropertyInformationParams<NumberType, number>): void {
+  if (!analyze.infoValues) {
+    return
   }
+
+  const infosSchema = infoKeys.reduce<any>((acc, key) => {
+    if (schema[key] != null) {
+      acc[key] = schema[key]
+    }
+    return acc
+  }, {})
+  const statsValueByNamespace = new Map<Namespace, StatsNumberValue>()
+
+  validator.add((namespace, input) => {
+    let statsValue = statsValueByNamespace.get(namespace)
+    if (!statsValue) {
+      statsValue = { count: 0 }
+      statsValueByNamespace.set(namespace, statsValue)
+    }
+    statsValue.count++
+    statsValue.minimum = statsValue.minimum == null || statsValue.minimum > input ? input : statsValue.minimum
+    statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
+  })
+
+  analyze.inform((): Informer[] => {
+    return Array.from(statsValueByNamespace)
+      .map(([namespace, statsValue]): Informer => {
+        return {
+          property: namespace,
+          type: schema.type,
+          stats: statsValue,
+          infos: infosSchema,
+        }
+      })
+  })
 }

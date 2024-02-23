@@ -1,4 +1,4 @@
-import { AnalyzeAndInpect, EnumType, getInputType, Namespace, PropertyResult, PropertyValidationParams } from './'
+import { AnalyzeAndInpect, EnumType, getInputType, Namespace, PropertyInformationParams, PropertyResult, PropertyValidationParams } from './'
 import { arrayInformations, arrayValidations } from './array'
 import { enumInformations, enumValidations } from './enum'
 import { numberInformations, numberValidations } from './number'
@@ -22,51 +22,52 @@ export function requiredValidations({ schema, validator, required }: PropertyVal
 
 type ValuesInfo = { notNull?: boolean; isNull?: boolean }
 
-export function optionalInformations({ schema, required, validator, analyze }: PropertyValidationParams): void {
-  if (!required && !schema.ignoreUnusedProperty && analyze instanceof AnalyzeAndInpect) {
-    const valuesInfoByNamespace = new Map<Namespace, ValuesInfo>()
-
-    validator.add((namespace: Namespace, input) => {
-      let valuesInfo = valuesInfoByNamespace.get(namespace)
-      if (!valuesInfo) {
-        valuesInfo = {}
-        valuesInfoByNamespace.set(namespace, valuesInfo)
-      }
-      valuesInfo.notNull = valuesInfo.notNull || input != null
-      valuesInfo.isNull = valuesInfo.isNull || input == null
-    })
-
-    analyze.report(() => {
-      const valuesInfoByNamespaceList = Array.from(valuesInfoByNamespace)
-      const alwaysPresent = valuesInfoByNamespaceList
-        .filter(([_namespace, valuesInfo]) => !valuesInfo.isNull)
-        .map(([namespace]): PropertyResult => {
-          return {
-            property: namespace,
-            type: 'ALWAYS_PRESENT',
-            description: 'optional property always present',
-          }
-        })
-
-      const newUsed = valuesInfoByNamespaceList
-        .filter(([_namespace, valuesInfo]) => !valuesInfo.notNull)
-        .map(([namespace]): PropertyResult => {
-          return {
-            property: namespace,
-            type: 'NEVER_USED',
-            description: 'optional property never used',
-          }
-        })
-
-      return alwaysPresent.concat(newUsed)
-    })
+export function optionalInformations({ schema, required, validator, analyze }: PropertyInformationParams): void {
+  if (required || schema.ignoreUnusedProperty) {
+    return
   }
+
+  const valuesInfoByNamespace = new Map<Namespace, ValuesInfo>()
+
+  validator.add((namespace: Namespace, input) => {
+    let valuesInfo = valuesInfoByNamespace.get(namespace)
+    if (!valuesInfo) {
+      valuesInfo = {}
+      valuesInfoByNamespace.set(namespace, valuesInfo)
+    }
+    valuesInfo.notNull = valuesInfo.notNull || input != null
+    valuesInfo.isNull = valuesInfo.isNull || input == null
+  })
+
+  analyze.report(() => {
+    const valuesInfoByNamespaceList = Array.from(valuesInfoByNamespace)
+    const alwaysPresent = valuesInfoByNamespaceList
+      .filter(([_namespace, valuesInfo]) => !valuesInfo.isNull)
+      .map(([namespace]): PropertyResult => {
+        return {
+          property: namespace,
+          type: 'ALWAYS_PRESENT',
+          description: 'optional property always present',
+        }
+      })
+
+    const newUsed = valuesInfoByNamespaceList
+      .filter(([_namespace, valuesInfo]) => !valuesInfo.notNull)
+      .map(([namespace]): PropertyResult => {
+        return {
+          property: namespace,
+          type: 'NEVER_USED',
+          description: 'optional property never used',
+        }
+      })
+
+    return alwaysPresent.concat(newUsed)
+  })
 }
 
-export function singleValueInformations({ schema, required, validator, analyze }: PropertyValidationParams): void {
+export function singleValueInformations({ schema, required, validator, analyze }: PropertyInformationParams): void {
   const simpleRequiredType = required
     && !schema.ignoreUnusedProperty
-    && analyze instanceof AnalyzeAndInpect
     && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
 
   if (simpleRequiredType) {
@@ -115,25 +116,26 @@ export function typeValidations({ schema, required, validator, analyze }: Proper
     })
   }
 
+  const analyzeInspect = analyze instanceof AnalyzeAndInpect
   switch (schema.type) {
     case 'string': {
       if ('enum' in schema) {
-        enumInformations({ schema, required, validator, analyze })
+        analyzeInspect && enumInformations({ schema, required, validator, analyze })
         enumValidations({ schema, required, validator, analyze })
       } else {
-        stringInformations({ schema, required, validator, analyze })
+        analyzeInspect && stringInformations({ schema, required, validator, analyze })
         stringValidations({ schema, required, validator, analyze })
       }
       break
     }
     case 'number':
     case 'integer': {
-      numberInformations({ schema, required, validator, analyze })
+      analyzeInspect && numberInformations({ schema, required, validator, analyze })
       numberValidations({ schema, required, validator, analyze })
       break
     }
     case 'array': {
-      arrayInformations({ schema, required, validator, analyze })
+      analyzeInspect && arrayInformations({ schema, required, validator, analyze })
       arrayValidations({ schema, required, validator, analyze })
       break
     }

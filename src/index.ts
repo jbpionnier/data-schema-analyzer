@@ -1,3 +1,4 @@
 export { SchemaGenerator } from './generator/schema-generator'
 export { RootSchema, Schema } from './schema'
-export { Analyze, AnalyzeReport, Tracker, TrackReport } from './tracker'
+export { Analyze, AnalyzeOptions, AnalyzeReport, Informer, Logger, PrintReporter, PropertyResult, Tracker, TrackerOptions,
+  TrackReport } from './tracker'
