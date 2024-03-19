@@ -113,6 +113,11 @@ And add the script to your `package.json`:
 <!--
 Getting started
 Ressources
+https://www.npmjs.com/package/ajv
+https://www.npmjs.com/package/json-schema-to-ts
+https://www.npmjs.com/package/zod-to-json-schema
+https://www.npmjs.com/package/typescript-json-schema
+
 https://github.com/Effect-TS/effect/tree/main/packages/schema
 https://github.com/PengJiyuan/ts-document
 https://github.com/xdoer/json-types-generator

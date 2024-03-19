@@ -31,20 +31,21 @@
     "test:watch": "jest --maxWorkers=4 --watch",
     "coverage": "jest --maxWorkers=4 --coverage",
     "prepublishOnly": "npm run test && npm run build",
+    "verify": "npm run clean && npm run lint && npm test && npm run build",
     "play": "tsx examples/generate-schema.ts && dprint fmt",
     "generate": "npx typescript-json-schema  --topRef --refs ./examples/stub-type.ts StubType --out ./examples/stub-type-schema2.json",
     "benchmark": "tsx src/benchmarks"
   },
   "dependencies": {
     "@types/json-schema": "^7.0.15",
-    "ts-morph": "^21.0.1"
+    "ts-morph": "^22.0.0"
   },
   "devDependencies": {
     "@types/benchmark": "^2.1.5",
     "@types/jest": "^29.5.12",
-    "@types/node": "~16.18.83",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
+    "@types/node": "~16.18.90",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
     "benchmark": "^2.1.4",
     "dprint": "^0.45.0",
     "eslint": "~8.57.0",
@@ -53,7 +54,7 @@
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.2",
     "tsx": "^4.7.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "jest": {
     "testEnvironment": "node",
