@@ -1,6 +1,7 @@
-import { AnalyzeAndInpect, EnumType, getInputType, Namespace, PropertyInformationParams, PropertyResult, PropertyValidationParams } from './'
 import { arrayInformations, arrayValidations } from './array'
 import { enumInformations, enumValidations } from './enum'
+import { AnalyzeAndInpect, ArrayType, checkSchemaType, EnumType, getSchemaType, Namespace, NumberType, PropertyInformationParams, PropertyResult,
+  propertyResultOk, PropertyValidationParams, StringType, TypeInt } from './index'
 import { numberInformations, numberValidations } from './number'
 import { stringInformations, stringValidations } from './string'
 
@@ -39,39 +40,37 @@ export function optionalInformations({ schema, required, validator, analyze }: P
     valuesInfo.isNull = valuesInfo.isNull || input == null
   })
 
-  analyze.report(() => {
-    const valuesInfoByNamespaceList = Array.from(valuesInfoByNamespace)
-    const alwaysPresent = valuesInfoByNamespaceList
-      .filter(([_namespace, valuesInfo]) => !valuesInfo.isNull)
-      .map(([namespace]): PropertyResult => {
-        return {
+  analyze.report((propertiesResult: PropertyResult[]) => {
+    for (const [namespace, valuesInfo] of valuesInfoByNamespace) {
+      if (!valuesInfo.isNull) {
+        propertiesResult.push({
           property: namespace,
           type: 'ALWAYS_PRESENT',
           description: 'optional property always present',
-        }
-      })
+        })
+      }
 
-    const newUsed = valuesInfoByNamespaceList
-      .filter(([_namespace, valuesInfo]) => !valuesInfo.notNull)
-      .map(([namespace]): PropertyResult => {
-        return {
+      if (!valuesInfo.notNull) {
+        propertiesResult.push({
           property: namespace,
           type: 'NEVER_USED',
           description: 'optional property never used',
-        }
-      })
-
-    return alwaysPresent.concat(newUsed)
+        })
+      }
+    }
   })
 }
 
+const SIMPLE_TYPE = new Set<TypeInt>([TypeInt.STRING, TypeInt.NUMBER, TypeInt.BOOLEAN])
+
 export function singleValueInformations({ schema, required, validator, analyze }: PropertyInformationParams): void {
+  const schemaType = getSchemaType(schema)
   const simpleRequiredType = required
     && !schema.ignoreUnusedProperty
-    && ['string', 'number', 'boolean', 'enum'].includes(schema.type)
+    && SIMPLE_TYPE.has(schemaType)
 
   if (simpleRequiredType) {
-    const valuesUsedByNamespace = new Map<Namespace, Set<any>>()
+    const valuesUsedByNamespace = new Map<Namespace, Set<unknown>>()
     validator.add((namespace: Namespace, input) => {
       let valuesUsed = valuesUsedByNamespace.get(namespace)
       if (!valuesUsed) {
@@ -83,29 +82,28 @@ export function singleValueInformations({ schema, required, validator, analyze }
       }
     })
 
-    analyze.report(() => {
-      return Array.from(valuesUsedByNamespace)
-        .filter(([_namespace, valuesUsed]) => valuesUsed.size === 1)
-        .map(([namespace, valuesUsed]): PropertyResult => {
-          return {
+    analyze.report((propertiesResult: PropertyResult[]) => {
+      for (const [namespace, valuesUsed] of valuesUsedByNamespace) {
+        if (valuesUsed.size === 1) {
+          propertiesResult.push({
             property: namespace,
             type: 'SINGLE_VALUE',
             description: 'property always have the same single value',
             example: valuesUsed.keys().next().value,
-          }
-        })
+          })
+        }
+      }
     })
   }
 }
 
 export function typeValidations({ schema, required, validator, analyze }: PropertyValidationParams): void {
-  if (!['enum', 'object'].includes(schema.type)) {
-    validator.add((namespace, input) => {
-      const inputType = getInputType(input)
-      if (schema.type === 'integer' && inputType === 'number') {
+  if (!checkSchemaType(schema, TypeInt.OBJECT)) {
+    validator.add((namespace, input, inputType) => {
+      if (checkSchemaType(schema, TypeInt.INTEGER) && inputType === TypeInt.NUMBER) {
         return
       }
-      if (inputType !== schema.type) {
+      if (!checkSchemaType(schema, inputType)) {
         return {
           property: namespace,
           type: 'TYPE',
@@ -117,26 +115,29 @@ export function typeValidations({ schema, required, validator, analyze }: Proper
   }
 
   const analyzeInspect = analyze instanceof AnalyzeAndInpect
-  switch (schema.type) {
-    case 'string': {
+  const analyzeInfoValues = analyzeInspect && analyze.infoValues
+  const schemaType = getSchemaType(schema)
+
+  switch (schemaType) {
+    case TypeInt.STRING: {
       if ('enum' in schema) {
         analyzeInspect && enumInformations({ schema, required, validator, analyze })
         enumValidations({ schema, required, validator, analyze })
       } else {
-        analyzeInspect && stringInformations({ schema, required, validator, analyze })
-        stringValidations({ schema, required, validator, analyze })
+        analyzeInfoValues && stringInformations({ schema, required, validator, analyze } as PropertyInformationParams<StringType, string>)
+        stringValidations({ schema, required, validator, analyze } as PropertyValidationParams<StringType, string>)
       }
       break
     }
-    case 'number':
-    case 'integer': {
-      analyzeInspect && numberInformations({ schema, required, validator, analyze })
-      numberValidations({ schema, required, validator, analyze })
+    case TypeInt.NUMBER:
+    case TypeInt.INTEGER: {
+      analyzeInfoValues && numberInformations({ schema, required, validator, analyze } as PropertyInformationParams<NumberType, number>)
+      numberValidations({ schema, required, validator, analyze } as PropertyValidationParams<NumberType, number>)
       break
     }
-    case 'array': {
-      analyzeInspect && arrayInformations({ schema, required, validator, analyze })
-      arrayValidations({ schema, required, validator, analyze })
+    case TypeInt.ARRAY: {
+      analyzeInfoValues && arrayInformations({ schema, required, validator, analyze } as PropertyInformationParams<ArrayType, object[]>)
+      arrayValidations({ schema, required, validator, analyze } as PropertyValidationParams<ArrayType, []>)
       break
     }
     default: {
@@ -158,10 +159,9 @@ export function typeValidations({ schema, required, validator, analyze }: Proper
 }
 
 export function notNullValidations({ validator }: PropertyValidationParams): void {
-  const resultOk: PropertyResult = { property: '' as Namespace, description: '', type: 'OK' }
   validator.add((_namespace, input) => {
     if (input == null) {
-      return resultOk
+      return propertyResultOk
     }
   })
 }

@@ -1,10 +1,11 @@
-import { ArrayType, Informer, Namespace, PropertyInformationParams, PropertyResult, PropertyValidationParams, StatsArrayValue } from './index'
+import { isArrayType } from '../schema-type'
+import { ArrayType, getSchemaKeys, Informer, Namespace, PropertyInformationParams, propertyResultOk, PropertyValidationParams,
+  StatsArrayValue } from './index'
 
 export function arrayValidations({ schema, validator }: PropertyValidationParams<ArrayType, []>): void {
-  const resultOk: PropertyResult = { property: '' as Namespace, description: 'property ok', type: 'OK' }
-  validator.add((_namespace, input) => {
-    if (!Array.isArray(input)) {
-      return resultOk
+  validator.add((_namespace, input, inputType) => {
+    if (!isArrayType(input, inputType)) {
+      return propertyResultOk
     }
   })
   if (schema.minItems != null) {
@@ -36,16 +37,7 @@ export function arrayValidations({ schema, validator }: PropertyValidationParams
 const infoKeys: Array<keyof ArrayType> = ['minItems', 'maxItems']
 
 export function arrayInformations({ schema, validator, analyze }: PropertyInformationParams<ArrayType, object[]>): void {
-  if (!analyze.infoValues) {
-    return
-  }
-
-  const infosSchema = infoKeys.reduce<any>((acc, key) => {
-    if (schema[key] != null) {
-      acc[key] = schema[key]
-    }
-    return acc
-  }, {})
+  const infosSchema = getSchemaKeys(schema, infoKeys)
   const statsValueByNamespace = new Map<Namespace, StatsArrayValue>()
 
   validator.add((namespace, input) => {
@@ -63,21 +55,20 @@ export function arrayInformations({ schema, validator, analyze }: PropertyInform
     statsValue.maxItems = statsValue.maxItems == null || statsValue.maxItems < arrayLength ? arrayLength : statsValue.maxItems
   })
 
-  analyze.inform((): Informer[] => {
-    return Array.from(statsValueByNamespace)
-      .map(([namespace, { count, empty, notEmpty, minItems, maxItems }]: [Namespace, StatsArrayValue]): Informer => {
-        const statsValueFormatted = {
-          count,
-          ...(empty > 0 ? { empty } : {}),
-          ...(notEmpty > 0 ? { notEmpty } : {}),
-          ...(minItems === maxItems ? { items: minItems } : { minItems, maxItems }),
-        }
-        return {
-          property: namespace,
-          type: schema.type,
-          stats: statsValueFormatted,
-          infos: infosSchema,
-        }
+  analyze.inform((informers: Informer[]): void => {
+    for (const [namespace, { count, empty, notEmpty, minItems, maxItems }] of statsValueByNamespace) {
+      const statsValueFormatted = {
+        count,
+        ...(empty > 0 ? { empty } : {}),
+        ...(notEmpty > 0 ? { notEmpty } : {}),
+        ...(minItems === maxItems ? { items: minItems } : { minItems, maxItems }),
+      }
+      informers.push({
+        property: namespace,
+        type: schema.type,
+        stats: statsValueFormatted,
+        infos: infosSchema,
       })
+    }
   })
 }

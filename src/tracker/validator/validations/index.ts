@@ -1,22 +1,26 @@
 import { Schema, TypeName } from '../../../schema'
 import { Analyze, AnalyzeAndInpect } from '../../analyze'
-import { Validator } from '../validator'
+import { Namespace, PropertyResult } from '../../index'
+import { PropertyValidator } from '../validator'
 
 export * from '../../../schema'
 export { Analyze, AnalyzeAndInpect } from '../../analyze'
 export { Informer, Namespace, PropertyResult } from '../../index'
+export { checkSchemaType, getInputType, getSchemaType, TypeInt } from '../schema-type'
+
+export const propertyResultOk: PropertyResult = { property: '' as Namespace, description: '', type: 'OK' }
 
 export type PropertyValidationParams<S extends { type: TypeName } = Schema, I = any> = {
   analyze: Analyze
   schema: S
-  validator: Validator<I>
+  validator: PropertyValidator<I>
   required: boolean
 }
 
 export type PropertyInformationParams<S extends { type: TypeName } = Schema, I = any> = {
   analyze: AnalyzeAndInpect
   schema: S
-  validator: Validator<I>
+  validator: PropertyValidator<I>
   required: boolean
 }
 
@@ -49,6 +53,12 @@ export type StatsEnumValue = {
   }
 }
 
-export function getInputType(input: any): string {
-  return Array.isArray(input) ? 'array' : typeof input
+export function getSchemaKeys<T extends {}>(schema: T, keys: Array<keyof T>): Partial<T> {
+  return keys.reduce<any>((acc, key) => {
+    const value = schema[key]
+    if (value != null) {
+      acc[key] = value
+    }
+    return acc
+  }, {})
 }

@@ -6,7 +6,6 @@ import { getPropertyValidator } from './property'
 import { Validator } from './validator'
 
 export function getSchemaValidator({ analyze, schema, required }: { analyze: Analyze<any>; schema: Schema; required: boolean }): Validator {
-  analyze.objectValidatorCount++
   if ('properties' in schema) {
     return getObjectValidator({ analyze, schema })
   }

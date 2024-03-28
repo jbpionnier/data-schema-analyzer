@@ -1,48 +1,78 @@
 import { Namespace, PropertyResult } from '../index'
+import { TypeInt } from './schema-type'
 
-export type PropertyValidation<I = any> =
+export abstract class Validator<I = {}> {
+  validateInput(namespace: Namespace, input: any, inputType: TypeInt): PropertyResult[] {
+    const propertiesResult: PropertyResult[] = []
+    this.validate(namespace, input, inputType, propertiesResult)
+    return propertiesResult
+  }
+
+  abstract validate(namespace: Namespace, input: I | undefined, inputType: TypeInt, propertiesResult: PropertyResult[]): void
+}
+
+type ObjectValidation<I = any> =
   | Validator<I>
-  | ((namespace: Namespace, input: I) => PropertyResult | PropertyResult[] | undefined | void)
-export type PropertiesValidation<I = any> = Array<PropertyValidation<I>>
+  | ((namespace: Namespace, input: I, inputType: TypeInt) => PropertyResult[])
 
-export class Validator<I = {}> {
-  readonly abortEarly: boolean
+export type ObjectValidations<I = any> = Array<ObjectValidation<I>>
 
+export class ObjectValidator extends Validator<any> {
   constructor(
-    private readonly validations: PropertiesValidation<I>,
-    { abortEarly }: { abortEarly?: boolean } = {},
+    private readonly validations: ObjectValidations,
   ) {
-    this.abortEarly = !!abortEarly
+    super()
+  }
+
+  validate(namespace: Namespace, input: any, inputType: TypeInt, propertiesResult: PropertyResult[]): void {
+    for (const validation of this.validations) {
+      this.#validateProperty({ validation, namespace, input, inputType, propertiesResult })
+    }
+  }
+
+  #validateProperty({ validation, namespace, input, inputType, propertiesResult }: {
+    validation: ObjectValidation
+    namespace: Namespace
+    input: any
+    inputType: TypeInt
+    propertiesResult: PropertyResult[]
+  }): void {
+    if (validation instanceof Validator) {
+      validation.validate(namespace, input, inputType, propertiesResult)
+      return
+    }
+
+    const results = validation(namespace, input, inputType)
+    for (const result of results) {
+      if (result.type !== 'OK') {
+        propertiesResult.push(result)
+      }
+    }
+  }
+}
+
+type PropertyValidation<I = any> = (namespace: Namespace, input: I, inputType: TypeInt) => PropertyResult | undefined | void
+
+export type PropertyValidations<I = any> = Array<PropertyValidation<I>>
+
+export class PropertyValidator<I = {}> extends Validator<I> {
+  constructor(
+    private readonly validations: PropertyValidations,
+  ) {
+    super()
   }
 
   add(validation: PropertyValidation<I>): void {
     this.validations.push(validation)
   }
 
-  validate(namespace: Namespace, input: I | undefined): PropertyResult[] {
-    if (!this.abortEarly) {
-      return this.validations
-        .flatMap((validation) => this.validateProperty(validation, namespace, input))
-        .filter((result): result is PropertyResult => result && result.type !== 'OK')
-    }
-
+  validate(namespace: Namespace, input: any, inputType: TypeInt, propertiesResult: PropertyResult[]): void {
     for (const validation of this.validations) {
-      const [firstResult] = this.validateProperty(validation, namespace, input)
-      if (firstResult) {
-        return [firstResult]
+      const propertyResult = validation(namespace, input, inputType)
+      if (propertyResult) {
+        propertiesResult.push(propertyResult)
+        return
       }
     }
-    return []
-  }
-
-  private validateProperty(validation: PropertyValidation, namespace: Namespace, input: I | undefined): PropertyResult[] {
-    if (validation instanceof Validator) {
-      return validation.validate(namespace, input)
-    }
-    const results = validation(namespace, input) || []
-    if (Array.isArray(results)) {
-      return results
-    }
-    return results ? [results] : []
   }
 }

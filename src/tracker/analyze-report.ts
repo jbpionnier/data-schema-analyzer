@@ -2,70 +2,89 @@ import * as pkgInfo from '../../package.json'
 import { Informer, PropertyResult } from './index'
 import { sortPropertiesByLevel } from './reporter'
 
-export class AnalyzeReport {
-  readonly version = pkgInfo.version
+export type AnalyzeReport = {
   /**
-   * Analyze start time
+   * Analysis time information
    */
-  readonly startedAt: Date
-  /**
-   * Analyze end time
-   */
-  readonly endedAt: Date
-  /**
-   * Duration time in milliseconds
-   */
-  readonly durationTime: number
+  timeInfo: TimeInfo
   /**
    * If all properties are OK
    */
-  readonly success: boolean
+  success: boolean
   /**
    * Properties result
    */
-  readonly properties: PropertyResult[]
+  properties: PropertyResult[]
   /**
    * Informations about the properties
    */
-  readonly informations: Informer[]
-  readonly metadata?: any
+  informations: Informer[]
+  metadata?: any
+}
 
-  constructor({ startTime, endTime, properties = [], informations = [], metadata }: {
-    startTime: number
-    endTime: number
-    properties?: PropertyResult[]
-    informations?: Informer[]
-    metadata?: object
-  }) {
-    this.startedAt = new Date(startTime)
-    this.endedAt = new Date(endTime)
-    this.durationTime = endTime - startTime
+export type TimeInfo = {
+  /**
+   * Analyze start time
+   */
+  startedAt: Date
+  /**
+   * Analyze end time
+   */
+  endedAt: Date
+  /**
+   * Duration of the analyze in milliseconds
+   */
+  analyzeDuration: number
+  /**
+   * Duration of the track in milliseconds
+   */
+  trackDuration: number
+  /**
+   * Percentage of the track time in the analyze time
+   */
+  trackTimePercentage: number
+}
 
-    this.success = properties.length === 0
-    this.properties = properties
-    this.informations = informations
-      .map(({ infos, ...other }) => {
-        return {
-          ...other,
-          ...Object.keys(infos || {}).length > 0 ? { infos } : {},
-        }
-      })
-      .sort(sortPropertiesByLevel())
-    this.metadata = {
-      version: this.version,
+export function createAnalyzeReport({ startAnalyzeTime, endAnalyzeTime, trackDuration, properties = [], informations = [], metadata }: {
+  startAnalyzeTime: number
+  endAnalyzeTime: number
+  trackDuration: number
+  properties?: PropertyResult[]
+  informations?: Informer[]
+  metadata?: {
+    total: number
+    objectValidatorCount: number
+    propertyValidatorCount: number
+    informations: number
+  }
+}): AnalyzeReport {
+  const informationsFormatted = informations
+    .map(({ infos, ...other }) => {
+      return {
+        ...other,
+        ...Object.keys(infos || {}).length > 0 ? { infos } : {},
+      }
+    })
+    .sort(sortPropertiesByLevel())
+  const analyzeDuration = endAnalyzeTime - startAnalyzeTime
+
+  const timeInfo: TimeInfo = {
+    startedAt: new Date(startAnalyzeTime),
+    endedAt: new Date(endAnalyzeTime),
+    analyzeDuration,
+    trackDuration,
+    trackTimePercentage: (trackDuration / analyzeDuration) * 100,
+  }
+
+  const report: AnalyzeReport = {
+    timeInfo,
+    success: properties.length === 0,
+    properties,
+    informations: informationsFormatted,
+    metadata: {
+      version: pkgInfo.version,
       ...metadata || {},
-    }
+    },
   }
-
-  toJSON(): object {
-    return {
-      metadata: this.metadata,
-      durationTime: this.durationTime,
-      startedAt: this.startedAt,
-      endedAt: this.endedAt,
-      success: this.success,
-      properties: this.properties,
-      informations: this.informations,
-    }
-  }
+  return report
 }
