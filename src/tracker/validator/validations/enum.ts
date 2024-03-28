@@ -1,12 +1,11 @@
-import { EnumType, getInputType, Informer, Namespace, PropertyInformationParams, PropertyResult, PropertyValidationParams,
-  StatsEnumValue } from './index'
+import { EnumType, getInputType, getSchemaKeys, Informer, Namespace, PropertyInformationParams, PropertyResult, PropertyValidationParams,
+  StatsEnumValue, TypeInt } from './index'
 
-const STRING_OR_NUMBER = new Set<string>(['string', 'number'])
+const STRING_OR_NUMBER = new Set<TypeInt>([TypeInt.STRING, TypeInt.NUMBER])
 
 export function enumValidations({ schema, validator }: PropertyValidationParams<EnumType, string>): void {
-  validator.add((namespace, input) => {
-    const inputType = getInputType(input)
-    const isStringOrNumber = inputType === 'string' || inputType === 'number'
+  validator.add((namespace, input, inputType) => {
+    const isStringOrNumber = STRING_OR_NUMBER.has(inputType)
     if (isStringOrNumber && !schema.enum.includes(input)) {
       return {
         property: namespace,
@@ -21,24 +20,23 @@ export function enumValidations({ schema, validator }: PropertyValidationParams<
 const infoKeys: Array<keyof EnumType> = ['ignoreUnusedValues']
 
 export function enumInformations({ schema, validator, analyze }: PropertyInformationParams<EnumType, string>): void {
-  if (!schema.ignoreUnusedValues && schema.enum?.[0] && STRING_OR_NUMBER.has(typeof schema.enum[0])) {
-    const valuesUsedByNamespace = new Map<Namespace, Set<any>>()
+  if (!schema.ignoreUnusedValues && schema.enum?.[0] && STRING_OR_NUMBER.has(getInputType(schema.enum[0]))) {
+    const valuesUsedByNamespace = new Map<Namespace, Set<unknown>>()
 
-    analyze.report(() => {
-      return Array.from(valuesUsedByNamespace)
-        .filter(([_namespace, valuesUsed]) => schema.enum.some((value) => !valuesUsed.has(value)))
-        .map(([namespace, valuesUsed]): PropertyResult => {
-          return {
+    analyze.report((propertiesResult: PropertyResult[]) => {
+      for (const [namespace, valuesUsed] of valuesUsedByNamespace) {
+        if (schema.enum.some((value) => !valuesUsed.has(value))) {
+          propertiesResult.push({
             property: namespace,
             type: 'ENUM_VALUES',
             description: 'values used',
             example: Array.from(valuesUsed).sort().join("' | '"),
-          }
-        })
+          })
+        }
+      }
     })
 
-    validator.add((namespace, input) => {
-      const inputType = getInputType(input)
+    validator.add((namespace, input, inputType) => {
       const isStringOrNumber = STRING_OR_NUMBER.has(inputType)
       if (isStringOrNumber) {
         let valuesUsed = valuesUsedByNamespace.get(namespace)
@@ -52,12 +50,7 @@ export function enumInformations({ schema, validator, analyze }: PropertyInforma
   }
 
   if (analyze.infoValues) {
-    const infosSchema = infoKeys.reduce<any>((acc, key) => {
-      if (schema[key] != null) {
-        acc[key] = schema[key]
-      }
-      return acc
-    }, {})
+    const infosSchema = getSchemaKeys(schema, infoKeys)
     const statsValueByNamespace = new Map<Namespace, StatsEnumValue>()
 
     validator.add((namespace, input) => {
@@ -70,16 +63,15 @@ export function enumInformations({ schema, validator, analyze }: PropertyInforma
       statsValue.enum[input] = (statsValue.enum[input] || 0) + 1
     })
 
-    analyze.inform((): Informer[] => {
-      return Array.from(statsValueByNamespace)
-        .map(([namespace, statsValue]): Informer => {
-          return {
-            property: namespace,
-            type: schema.type,
-            stats: statsValue,
-            infos: infosSchema,
-          }
+    analyze.inform((informers: Informer[]): void => {
+      for (const [namespace, statsValue] of statsValueByNamespace) {
+        informers.push({
+          property: namespace,
+          type: schema.type,
+          stats: statsValue,
+          infos: infosSchema,
         })
+      }
     })
   }
 }

@@ -6,9 +6,9 @@ import { createSimplePrintReporter } from './reporter'
 export class Tracker<T extends { [property: string]: any }> {
   readonly rootSchema: RootSchema
 
-  private readonly identifierPropertyName: Namespace | undefined
-  private readonly printReporter: PrintReporter
-  private readonly summaryResult: boolean
+  readonly #identifierPropertyName: Namespace | undefined
+  readonly #printReporter: PrintReporter
+  readonly #summaryResult: boolean
 
   /**
    * Create a new Tracker
@@ -27,9 +27,9 @@ export class Tracker<T extends { [property: string]: any }> {
     if (!schema.$ref || !mainSchema) {
       throw new Error(`Schema ${schema.$ref || '$ref'} not found`)
     }
-    this.identifierPropertyName = getIdentifierPropertyName(mainSchema)
-    this.printReporter = printReporter || createSimplePrintReporter(logger)
-    this.summaryResult = !!summaryResult
+    this.#identifierPropertyName = getIdentifierPropertyName(mainSchema)
+    this.#printReporter = printReporter || createSimplePrintReporter(logger)
+    this.#summaryResult = !!summaryResult
   }
 
   /**
@@ -38,13 +38,13 @@ export class Tracker<T extends { [property: string]: any }> {
    * @param infoValues If true, the tracker will return the value of each property
    */
   analyze({ inspectValues = true, infoValues }: AnalyzeOptions = {}): Analyze<T> {
-    const filterProperties = this.summaryResult
+    const filterProperties = this.#summaryResult
       ? filterSummaryResults()
       : (properties: PropertyResult[]) => properties
 
     const options: AnalyzeParams = {
-      printReporter: this.printReporter,
-      identifierPropertyName: this.identifierPropertyName,
+      printReporter: this.#printReporter,
+      identifierPropertyName: this.#identifierPropertyName,
       rootSchema: this.rootSchema,
       filterProperties,
     }

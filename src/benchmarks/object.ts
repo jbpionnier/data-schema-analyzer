@@ -6,7 +6,7 @@ const emptySuite = new Benchmark.Suite('parse: empty')
 const shortSuite = new Benchmark.Suite('parse: short')
 const longSuite = new Benchmark.Suite('parse: long')
 
-const empty = createAnalyze({})
+// const empty = createAnalyze({})
 const short = createAnalyze({
   string: { type: 'string' },
 })
@@ -16,19 +16,19 @@ const long = createAnalyze({
   boolean: { type: 'boolean' },
 })
 
-emptySuite
-  .add('valid', () => {
-    empty.track({})
-  })
-  .add('valid: extra keys', () => {
-    empty.track({ string: 'string' })
-  })
-  .add('invalid: null', () => {
-    empty.track(null as any)
-  })
-  .on('cycle', (e: Benchmark.Event) => {
-    console.log(`${(emptySuite as any).name}: ${e.target}`)
-  })
+// emptySuite
+//   .add('valid', () => {
+//     empty.track({})
+//   })
+//   .add('valid: extra keys', () => {
+//     empty.track({ string: 'string' })
+//   })
+//   .add('invalid: null', () => {
+//     empty.track(null as any)
+//   })
+//   .on('cycle', (e: Benchmark.Event) => {
+//     console.log(`${(emptySuite as any).name}: ${e.target}`)
+//   })
 
 shortSuite
   .add('valid', () => {
@@ -37,9 +37,9 @@ shortSuite
   .add('valid: extra keys', () => {
     short.track({ string: 'string', number: 42 })
   })
-  .add('invalid: null', () => {
-    short.track(null)
-  })
+  // .add('invalid: null', () => {
+  //   short.track(null)
+  // })
   .on('cycle', (e: Benchmark.Event) => {
     console.log(`${(shortSuite as any).name}: ${e.target}`)
   })
@@ -51,9 +51,9 @@ longSuite
   .add('valid: extra keys', () => {
     long.track({ string: 'string', number: 42, boolean: true, list: [] })
   })
-  .add('invalid: null', () => {
-    long.track(null)
-  })
+  // .add('invalid: null', () => {
+  //   long.track(null)
+  // })
   .on('cycle', (e: Benchmark.Event) => {
     console.log(`${(longSuite as any).name}: ${e.target}`)
   })

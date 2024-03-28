@@ -2,19 +2,27 @@ import { ObjectProperties, ObjectType } from '../../schema'
 import { Analyze } from '../analyze'
 import { Namespace, PropertyResult } from '../index'
 import { getSchemaValidator } from './schema'
-import { PropertiesValidation, Validator } from './validator'
+import { getInputType } from './schema-type'
+import { ObjectValidations, ObjectValidator, Validator } from './validator'
 
 export function getObjectValidator({ analyze, schema }: {
   analyze: Analyze
   schema: ObjectType
-}): Validator {
+}): ObjectValidator {
+  analyze.objectValidatorCount++
   const validators = getPropertiesValidator({ schema, analyze })
 
-  const validations: PropertiesValidation = [
-    (namespace: Namespace, input): PropertyResult[] => validateProperties({ input, namespace, validators }),
-    (namespace: Namespace, input): PropertyResult[] => validateUnknownProperties({ input, namespace, properties: schema.properties }),
+  const validations: ObjectValidations = [
+    (namespace: Namespace, input) => {
+      if (input == null) { return [] }
+
+      const propertiesResult: PropertyResult[] = []
+      validateProperties({ input, namespace, validators, propertiesResult })
+      validateUnknownProperties({ input, namespace, properties: schema.properties, propertiesResult })
+      return propertiesResult
+    },
   ]
-  return new Validator(validations)
+  return new ObjectValidator(validations)
 }
 
 function getPropertiesValidator({ schema, analyze }: {
@@ -39,36 +47,40 @@ function getPropertiesValidator({ schema, analyze }: {
     })
 }
 
-function validateProperties({ namespace, validators, input }: {
+function validateProperties({ namespace, validators, input, propertiesResult }: {
   namespace: Namespace
   validators: [string, Validator][]
-  input: any | undefined
-}): PropertyResult[] {
-  if (input == null) { return [] }
-
-  return validators
-    .flatMap(([property, validator]) => {
-      const fullNamespace: Namespace = namespace ? `${namespace}.${property}` : property as Namespace
-      return validator.validate(fullNamespace, input[property])
-    })
+  input: { [property: string]: {} }
+  propertiesResult: PropertyResult[]
+}): void {
+  for (const [property, validator] of validators) {
+    const fullNamespace = getNamespace(namespace, property)
+    const propertyValue = input[property]
+    const inputType = getInputType(propertyValue)
+    validator.validate(fullNamespace, propertyValue, inputType, propertiesResult)
+  }
 }
 
-function validateUnknownProperties({ namespace, properties, input }: {
+function validateUnknownProperties({ namespace, properties, input, propertiesResult }: {
   namespace: Namespace
   properties: ObjectProperties
-  input: any | undefined
-}): PropertyResult[] {
-  if (input == null) { return [] }
-
-  return Object.keys(input)
-    .filter((property) => !properties[property])
-    .map((property) => {
-      const fullNamespace: Namespace = namespace ? `${namespace}.${property}` : property as Namespace
-      return {
+  input: { [property: string]: {} }
+  propertiesResult: PropertyResult[]
+}): void {
+  const entries = Object.entries(input)
+  for (const [property, example] of entries) {
+    if (!properties[property]) {
+      const fullNamespace = getNamespace(namespace, property)
+      propertiesResult.push({
         property: fullNamespace,
         type: 'UNKNOWN',
         description: 'unknown property',
-        example: input[property],
-      }
-    })
+        example,
+      })
+    }
+  }
+}
+
+function getNamespace(namespace: Namespace, property: string): Namespace {
+  return (namespace ? namespace + '.' + property : property) as Namespace
 }

@@ -1,8 +1,8 @@
 import { RootSchema, Schema, TypeName } from '../schema'
 import { StatsArrayValue, StatsEnumValue, StatsNumberValue, StatsStringValue } from './validator/validations'
 
-export { Analyze } from './analyze'
-export { AnalyzeReport } from './analyze-report'
+export { Analyze, AnalyzeAndInpect } from './analyze'
+export { AnalyzeReport, TimeInfo } from './analyze-report'
 export { Tracker } from './tracker'
 
 export type TrackerOptions = {
@@ -62,8 +62,8 @@ export type Informer = {
   infos?: Partial<Schema>
 }
 
-export type Reporters = Array<() => PropertyResult[]>
-export type Informers = Array<() => Informer[]>
+export type Reporters = Array<(propertiesResult: PropertyResult[]) => void>
+export type Informers = Array<(informers: Informer[]) => void>
 
 export type TrackReport = {
   success: boolean

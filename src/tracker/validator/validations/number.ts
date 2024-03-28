@@ -1,7 +1,8 @@
-import { Informer, Namespace, NumberType, PropertyInformationParams, PropertyValidationParams, StatsNumberValue } from './index'
+import { checkSchemaType, getSchemaKeys, Informer, Namespace, NumberType, PropertyInformationParams, PropertyValidationParams, StatsNumberValue,
+  TypeInt } from './index'
 
 export function numberValidations({ schema, validator }: PropertyValidationParams<NumberType, number>): void {
-  if (schema.type === 'integer') {
+  if (checkSchemaType(schema, TypeInt.INTEGER)) {
     validator.add((namespace, input) => {
       if (!Number.isInteger(input)) {
         return {
@@ -70,16 +71,7 @@ export function numberValidations({ schema, validator }: PropertyValidationParam
 const infoKeys: Array<keyof NumberType> = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum']
 
 export function numberInformations({ schema, validator, analyze }: PropertyInformationParams<NumberType, number>): void {
-  if (!analyze.infoValues) {
-    return
-  }
-
-  const infosSchema = infoKeys.reduce<any>((acc, key) => {
-    if (schema[key] != null) {
-      acc[key] = schema[key]
-    }
-    return acc
-  }, {})
+  const infosSchema = getSchemaKeys(schema, infoKeys)
   const statsValueByNamespace = new Map<Namespace, StatsNumberValue>()
 
   validator.add((namespace, input) => {
@@ -93,15 +85,14 @@ export function numberInformations({ schema, validator, analyze }: PropertyInfor
     statsValue.maximum = statsValue.maximum == null || statsValue.maximum < input ? input : statsValue.maximum
   })
 
-  analyze.inform((): Informer[] => {
-    return Array.from(statsValueByNamespace)
-      .map(([namespace, statsValue]): Informer => {
-        return {
-          property: namespace,
-          type: schema.type,
-          stats: statsValue,
-          infos: infosSchema,
-        }
+  analyze.inform((informers: Informer[]): void => {
+    for (const [namespace, statsValue] of statsValueByNamespace) {
+      informers.push({
+        property: namespace,
+        type: schema.type,
+        stats: statsValue,
+        infos: infosSchema,
       })
+    }
   })
 }
