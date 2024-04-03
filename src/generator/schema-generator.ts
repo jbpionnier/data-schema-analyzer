@@ -1,39 +1,35 @@
 import * as fs from 'node:fs'
 import * as Path from 'path'
-import { ArrayTypeNode, Identifier, InterfaceDeclaration, JSDocableNode, Node, Project, PropertySignature, SourceFile, ts, TupleTypeNode,
-  TypeAliasDeclaration, TypeLiteralNode, TypeNode, TypeReferenceNode, UnionTypeNode } from 'ts-morph'
+import { ArrayTypeNode, Identifier, InterfaceDeclaration, JSDocableNode, Node, Project, PropertySignature, ts, TupleTypeNode, TypeLiteralNode,
+  TypeNode, TypeReferenceNode, UnionTypeNode } from 'ts-morph'
 import { AnyType, ArrayType, EnumType, ItemsType, ObjectType, RootSchema, Schema, ValueType } from '../schema'
+import { SourceFiles } from './source-files'
 
 export type GenerateOptions = {
   rootInterfaceName: string
   sourceFiles: string[]
 }
 
-export class SourceFiles {
-  constructor(
-    private readonly sourceFiles: SourceFile[],
-  ) {}
-
-  getTypeAlias(name: string): TypeAliasDeclaration | undefined {
-    return this.sourceFiles
-      .map((sourceFile) => sourceFile.getTypeAlias(name))
-      .find((typeAlias) => !!typeAlias)
-  }
-}
-
 export class SchemaGenerator {
-  private readonly project: Project
+  private readonly projects: Project[]
 
   private definitions: { [key: string]: ObjectType } = {}
 
   constructor(opts: {
-    tsConfigFilePath: string
+    tsConfigFilePath: string | string[]
   }) {
-    this.project = new Project({ tsConfigFilePath: opts.tsConfigFilePath })
+    this.projects = Array.isArray(opts.tsConfigFilePath)
+      ? opts.tsConfigFilePath.map((tsConfigFilePath) => new Project({ tsConfigFilePath }))
+      : [new Project({ tsConfigFilePath: opts.tsConfigFilePath })]
+  }
+
+  private getSourceFiles(globPatterns: ReadonlyArray<string>): SourceFiles {
+    const sourceFiles = this.projects.flatMap((project) => project.getSourceFiles(globPatterns))
+    return new SourceFiles(sourceFiles)
   }
 
   generate(opts: GenerateOptions): RootSchema {
-    const sourceFiles = new SourceFiles(this.project.getSourceFiles(opts.sourceFiles))
+    const sourceFiles = this.getSourceFiles(opts.sourceFiles)
     const typeAlias = sourceFiles.getTypeAlias(opts.rootInterfaceName)
     if (!typeAlias) {
       throw new Error(`Type "${opts.rootInterfaceName}" not found in :\n"${opts.sourceFiles.join('\n ')}"`)
