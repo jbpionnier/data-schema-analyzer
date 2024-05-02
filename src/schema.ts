@@ -26,6 +26,7 @@ export type StringType = {
 }
 export type NumberType = {
   type: 'number' | 'integer'
+  $ref?: string
   id?: true
   multiple?: true
   minimum?: number

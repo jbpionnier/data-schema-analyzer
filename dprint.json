@@ -20,6 +20,6 @@
     "**/*.js"
   ],
   "plugins": [
-    "https://plugins.dprint.dev/typescript-0.89.0.wasm"
+    "https://plugins.dprint.dev/typescript-0.90.4.wasm"
   ]
 }
