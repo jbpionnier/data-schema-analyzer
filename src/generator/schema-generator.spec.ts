@@ -34,6 +34,7 @@ describe('Schema Generator', () => {
             'mySubTypeByRefList',
             'myTupleEmpty',
             'myTupleNumber',
+            'propBranded',
           ],
           properties: {
             myString: { minLength: 1, maxLength: 3, pattern: '^\\w+$', id: true, type: 'string' },
@@ -60,6 +61,7 @@ describe('Schema Generator', () => {
             myListObject: { type: 'array', items: { type: 'object' }, ignoreUnusedProperty: true },
             myListEnumString: { type: 'array', items: { type: 'string', enum: ['ping', 'pong'] } },
             myListEnumNumber: { type: 'array', items: { type: 'string', enum: ['1', '2', '3'] } },
+            propBranded: { type: 'string' },
             myList: {
               type: 'array',
               items: {

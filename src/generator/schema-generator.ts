@@ -126,6 +126,12 @@ export const ${opts.rootInterfaceName}Schema: RootSchema = ${schemaString}`
         return this.getTypeReferenceSchema(node as TypeReferenceNode, sourceFiles, propertyName)
       }
       case ts.SyntaxKind.IntersectionType: {
+        const [firstTypeNode] = (node as UnionTypeNode).getTypeNodes()
+        const firstType = this.getValueType(firstTypeNode, sourceFiles, propertyName)
+        if (typeof firstType !== 'string' && ['string', 'number'].includes(firstType.type)) {
+          return firstType
+        }
+
         const objectType: ObjectType = (node as UnionTypeNode).getTypeNodes()
           .map((typeNode): ObjectType => (this.getValueType(typeNode, sourceFiles, propertyName) as ObjectType))
           .reduce<ObjectType>((acc, valueType) => {

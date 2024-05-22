@@ -209,6 +209,22 @@
             "maxItems": 1,
             "minItems": 1,
             "type": "array"
+        },
+        "propBranded": {
+            "allOf": [
+                {
+                    "properties": {
+                        "__brand": {
+                            "const": "propBranded",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
+                {
+                    "type": "string"
+                }
+            ]
         }
     },
     "type": "object"

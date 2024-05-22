@@ -13,7 +13,8 @@
         "myString",
         "mySubTypeByRefList",
         "myTupleEmpty",
-        "myTupleNumber"
+        "myTupleNumber",
+        "propBranded"
       ],
       "properties": {
         "combineObject": {
@@ -226,6 +227,9 @@
           "items": {
             "type": "number"
           }
+        },
+        "propBranded": {
+          "type": "string"
         }
       }
     }
